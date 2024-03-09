@@ -6,6 +6,7 @@ repository = "https://github.com/goDeni/stand-control-bot"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+stated_dialogues = { git = "https://github.com/goDeni/PasswordsKeeper.git", tag = "v0.0.4", version = "0.1.0" }
 
 # The profile that 'cargo dist' will build with
 [profile.dist]
