@@ -39,7 +39,7 @@ pub fn build_handler(
 }
 
 async fn main_state_handler(msg: Message, context: Arc<BotContext>) -> HandlerResult {
-    log::debug!(
+    tracing::debug!(
         "Handling message. chat_id={} from={:?}",
         msg.chat.id,
         msg.from().map(|f| f.id)
@@ -60,14 +60,14 @@ async fn default_callback_handler(
     query: CallbackQuery,
     context: Arc<BotContext>,
 ) -> HandlerResult {
-    log::debug!(
+    tracing::debug!(
         "Callback: called, chat_id: {:?}; from: {:?}",
         query.chat_id(),
         query.from.id
     );
 
     let user_id = query.from.id;
-    log::debug!("Callback ({user_id}): Handling \"{:?}\"", query.data);
+    tracing::debug!("Callback ({user_id}): Handling \"{:?}\"", query.data);
     handle_interaction(
         &user_id.0,
         &context.bot_adapter,
@@ -78,7 +78,7 @@ async fn default_callback_handler(
 }
 
 async fn handle_reset_command(msg: Message, context: Arc<BotContext>) -> HandlerResult {
-    log::debug!(
+    tracing::debug!(
         "Handling reset command. chat_id={} from={:?}",
         msg.chat.id,
         msg.from().map(|f| f.id)
@@ -98,7 +98,7 @@ async fn handle_reset_command(msg: Message, context: Arc<BotContext>) -> Handler
 }
 
 async fn handle_command(msg: Message, context: Arc<BotContext>) -> HandlerResult {
-    log::debug!(
+    tracing::debug!(
         "Handling {:?} command. chat_id={} from={:?}",
         msg.text(),
         msg.chat.id,
