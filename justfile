@@ -1,7 +1,8 @@
-format:
-    cargo fmt
+fmt:
     cargo clippy --fix --allow-dirty
+    cargo fmt
 
-lint:
+check:
+    cargo check
     cargo fmt --check
     cargo clippy -- -D warnings
