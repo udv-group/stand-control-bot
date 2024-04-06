@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE hosts SET user_id = NULL, leased_until = NULL WHERE user_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d680b69cdbf11c43892e436888e9ff030d9d11ee89a15562aa9bc52dba958c5d"
+}

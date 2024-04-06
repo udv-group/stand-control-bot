@@ -1,0 +1,9 @@
+[app]
+port = 8080
+[database]
+host = "127.0.0.1"
+port = 5432
+username = "postgres"
+password = "password"
+database_name = "stand_control_bot"
+require_ssl = false

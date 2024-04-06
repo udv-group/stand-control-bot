@@ -7,12 +7,36 @@ repository = "https://github.com/goDeni/stand-control-bot"
 
 [dependencies]
 anyhow = "1.0.81"
+chrono = { version = "0.4.37", default-features = false, features = ["now", "serde"] }
+config = { version = "0.14" }
 dotenv = "0.15.0"
-tracing = '0.1'
-tracing-subscriber = { version = "0.3", features = ["registry", "env-filter", "fmt"]}
-stated_dialogues = { git = "https://github.com/goDeni/stated_dialogues.git", branch = "main", features = ["teloxide-adapter"] }
+ipnetwork = "0.20.0"
+secrecy = { version = "0.8", features = ["serde"] }
+serde = { version = "1.0.197", features = ["derive"] }
+serde-aux = { version = "4" }
 teloxide = { version = "0.12.2", features = ["macros"] }
+thiserror = "1.0.58"
 tokio = { version = "1.36.0", features = ["rt-multi-thread", "macros"] }
+tracing = '0.1'
+
+[dependencies.stated_dialogues]
+git = "https://github.com/goDeni/stated_dialogues.git"
+branch = "main"
+features = ["teloxide-adapter"]
+
+[dependencies.tracing-subscriber]
+version = "0.3"
+features = ["registry", "env-filter", "fmt"]
+
+[dependencies.sqlx]
+version = "0.7"
+default-features = false
+features = ["macros", "postgres", "uuid", "chrono", "migrate", "runtime-tokio-rustls", "ipnetwork"]
+
+[dev-dependencies]
+fake = "2"
+tokio = { version = "1", features = ["rt", "macros"] }
+uuid = { version = "1.3", features = ["v4", "serde"] }
 
 # The profile that 'cargo dist' will build with
 [profile.dist]

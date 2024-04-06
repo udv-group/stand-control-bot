@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE hosts SET user_id = $1, leased_until = $2 WHERE id = any($3)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d65be7e3814116cf65a3f965b7f4ad55edd22211def2d76807f52a699a3b7af4"
+}
