@@ -1,5 +1,13 @@
-use stand_control_bot::{bot::build_tg_bot, configuration::get_config, set_env, web::Application};
+use stand_control_bot::{
+    configuration::get_config,
+    db::Registry,
+    logic::{notifications::Notifier, release::hosts_release_timer},
+    set_env,
+    web::Application,
+};
 
+use stated_dialogues::controller::teloxide::TeloxideAdapter;
+use teloxide::Bot;
 use tokio::select;
 use tracing::info;
 
@@ -12,15 +20,22 @@ async fn main() -> Result<(), anyhow::Error> {
     set_env();
 
     tracing::info!("Starting stand-control");
-    let server = Application::build(&settings).await?;
-    let bot_handle = tokio::spawn(async { build_tg_bot().dispatch().await });
 
+    let bot = Bot::from_env();
+    let registry = Registry::new(&settings.database).await?;
+
+    let (sender, notifier) = Notifier::create(registry.clone(), TeloxideAdapter::new(bot.clone()));
+
+    let server = Application::build(&settings).await?;
     select! {
-        _ = bot_handle => {
-            info!("Bot exited")
-        }
         _ = server.serve_forever() => {
             info!("Server exited")
+        }
+        _ = notifier.work() => {
+            info!("Notifier exited")
+        }
+        _ = hosts_release_timer(registry, sender) => {
+            info!("Hosts release timer exited")
         }
     };
     info!("stand-control shut down");

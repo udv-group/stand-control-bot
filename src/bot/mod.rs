@@ -72,9 +72,8 @@ impl DialCtxActions for DialContext {
     }
 }
 
-pub fn build_tg_bot() -> Dispatcher<Bot, Box<dyn Error + Send + Sync>, DefaultKey> {
+pub fn build_tg_bot(bot: Bot) -> Dispatcher<Bot, Box<dyn Error + Send + Sync>, DefaultKey> {
     tracing::info!("Starting stand-control");
-    let bot = Bot::from_env();
     let context = Arc::new(BotContext::new(bot.clone()));
 
     Dispatcher::builder(bot, build_handler())
