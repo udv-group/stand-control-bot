@@ -1,4 +1,7 @@
-use std::path::PathBuf;
+use std::{
+    net::{IpAddr, SocketAddr},
+    path::PathBuf,
+};
 
 use secrecy::{ExposeSecret, Secret};
 use serde::Deserialize;
@@ -16,10 +19,16 @@ pub struct Settings {
 
 #[derive(Deserialize, Clone)]
 pub struct AppSettings {
-    pub host: String,
+    pub host: IpAddr,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub base_url: String,
+}
+
+impl AppSettings {
+    pub fn socket_addr(&self) -> SocketAddr {
+        SocketAddr::new(self.host, self.port)
+    }
 }
 
 #[derive(Deserialize, Clone)]

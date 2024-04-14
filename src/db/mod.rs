@@ -8,12 +8,13 @@ use sqlx::{PgPool, Postgres, Transaction};
 use crate::configuration::DatabaseSettings;
 use crate::db::models::{Host, HostId, LeasedHost, User, UserId};
 
+#[derive(Clone)]
 pub struct Registry {
     pool: PgPool,
 }
 
 impl Registry {
-    pub async fn new(settings: DatabaseSettings) -> sqlx::Result<Self> {
+    pub async fn new(settings: &DatabaseSettings) -> sqlx::Result<Self> {
         let pool = PgPool::connect_with(settings.with_db()).await?;
         Ok(Registry { pool })
     }

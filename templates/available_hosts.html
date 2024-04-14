@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <h3>Here are your items:</h3>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+                Create
+            </button>
+            <div class="table-responsive-sm">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">IP</th>
+                            <th scope="col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for host in hosts %}
+                        <tr>
+                            <th scope="row">{{host.id}}</th>
+                            <td>{{host.ip_address}}</td>
+                            <td>
+                                <button type="button" class="btn btn-primary">
+                                    Lease
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

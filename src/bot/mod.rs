@@ -4,10 +4,17 @@ use anyhow::Result;
 use stated_dialogues::controller::{
     teloxide::TeloxideAdapter, CtxResult, DialCtxActions, DialogueController,
 };
-use std::{collections::HashMap, sync::Arc};
-use teloxide::{macros::BotCommands, types::UserId, Bot};
+use std::{collections::HashMap, error::Error, sync::Arc};
+use teloxide::{
+    dispatching::{dialogue::InMemStorage, DefaultKey, Dispatcher},
+    macros::BotCommands,
+    prelude::*,
+    types::UserId,
+    Bot,
+};
 use tokio::sync::RwLock;
 
+use self::handlers::build_handler;
 use crate::dialogues::hello::HelloDialogue;
 
 #[derive(Clone, Default, Debug)]
@@ -19,7 +26,7 @@ pub enum BotState {
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase")]
 enum Command {
-    #[command(description = "Remove and initialize dialog")]
+    #[command(description = "Remove and initialize dialogue")]
     Reset,
 }
 
@@ -63,4 +70,21 @@ impl DialCtxActions for DialContext {
             .map(|(user_id, controller)| (&user_id.0, controller))
             .collect()
     }
+}
+
+pub fn build_tg_bot() -> Dispatcher<Bot, Box<dyn Error + Send + Sync>, DefaultKey> {
+    tracing::info!("Starting stand-control");
+    let bot = Bot::from_env();
+    let context = Arc::new(BotContext::new(bot.clone()));
+
+    Dispatcher::builder(bot, build_handler())
+        .dependencies(dptree::deps![InMemStorage::<BotState>::new(), context])
+        .default_handler(|upd| async move {
+            tracing::warn!("Unhandled update: {:?}", upd);
+        })
+        .error_handler(LoggingErrorHandler::with_custom_text(
+            "An error has occurred in the dispatcher",
+        ))
+        .enable_ctrlc_handler()
+        .build()
 }
