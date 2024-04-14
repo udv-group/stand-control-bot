@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{fmt::Display, ops::Deref};
 
 use chrono::prelude::*;
 use ipnetwork::IpNetwork;
@@ -25,6 +25,11 @@ impl From<i32> for UserId {
 #[derive(sqlx::Type, Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[sqlx(transparent)]
 pub struct HostId(pub i32);
+impl Display for HostId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl Deref for HostId {
     type Target = i32;
