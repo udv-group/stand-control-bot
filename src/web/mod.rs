@@ -1,24 +1,40 @@
+mod auth;
 mod hosts;
 
+use askama_axum::IntoResponse;
 use axum::{
     body::Body,
     extract::{FromRef, MatchedPath},
-    routing::get,
+    middleware,
+    response::Redirect,
+    routing::{get, post},
     Router,
 };
+
+use axum_extra::extract::cookie::Key;
+use axum_login::AuthManagerLayerBuilder;
 use hyper::Request;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+
 use tower_http::trace::TraceLayer;
+use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, SessionManagerLayer};
 use tracing::info;
 use uuid::Uuid;
 
-use self::hosts::get_hosts;
+use self::{
+    auth::{
+        login,
+        middleware::{auth_middleware, Backend},
+    },
+    hosts::get_hosts,
+};
 use crate::{configuration::Settings, db::Registry};
 
 #[derive(FromRef, Clone)]
 struct AppState {
     registry: Registry,
+    flash_config: axum_flash::Config,
 }
 
 pub struct Application {
@@ -28,7 +44,6 @@ pub struct Application {
 
 impl Application {
     pub async fn build(settings: &Settings) -> Result<Application, anyhow::Error> {
-        let listener = TcpListener::bind(settings.app.socket_addr()).await?;
         let tracing_layer = TraceLayer::new_for_http().make_span_with(|req: &Request<Body>| {
                 let method = req.method();
                 let uri = req.uri();
@@ -37,12 +52,32 @@ impl Application {
                 tracing::debug_span!("http-request", %method, %uri, matched_path, request_id = %Uuid::new_v4())
             });
 
+        let session_layer = SessionManagerLayer::new(MemoryStore::default())
+            .with_secure(true)
+            .with_expiry(Expiry::OnInactivity(Duration::days(7)));
+
+        let registry = Registry::new(&settings.database).await?;
+
+        let auth_layer = AuthManagerLayerBuilder::new(
+            Backend::new(&settings.ldap, registry.clone()),
+            session_layer,
+        )
+        .build();
+
+        let authed_router = Router::new().route("/hosts", get(get_hosts));
+
         let app = Router::new()
-            .route("/", get(get_hosts))
+            .route("/login", post(login::login).get(login::login_page))
+            .merge(authed_router.route_layer(middleware::from_fn(auth_middleware)))
+            .fallback(|| async { Redirect::to("/hosts").into_response() })
+            .layer(auth_layer)
             .layer(tracing_layer)
             .with_state(AppState {
-                registry: Registry::new(&settings.database).await?,
+                registry,
+                flash_config: axum_flash::Config::new(Key::derive_from(&settings.app.hmac_secret)),
             });
+
+        let listener = TcpListener::bind(settings.app.socket_addr()).await?;
         Ok(Self {
             listening_addr: listener.local_addr()?,
             server: Server::new(listener, app),

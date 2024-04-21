@@ -91,16 +91,21 @@ impl<'c> RegistryTx<'c> {
         .await?;
         Ok(())
     }
-    pub async fn get_user(&mut self, user_id: &UserId) -> sqlx::Result<User> {
+    pub async fn get_user_by_id(&mut self, user_id: &UserId) -> sqlx::Result<Option<User>> {
         sqlx::query_as!(User, "SELECT * FROM users WHERE id = $1", user_id.deref())
-            .fetch_one(&mut *self.tx)
+            .fetch_optional(&mut *self.tx)
+            .await
+    }
+    pub async fn get_user(&mut self, login: &str) -> sqlx::Result<Option<User>> {
+        sqlx::query_as!(User, "SELECT * FROM users WHERE login = $1", login)
+            .fetch_optional(&mut *self.tx)
             .await
     }
     pub async fn add_user(
         &mut self,
-        login: String,
-        tg_handle: Option<String>,
-        email: Option<String>,
+        login: &str,
+        tg_handle: Option<&str>,
+        email: Option<&str>,
     ) -> sqlx::Result<UserId> {
         let rec = sqlx::query!(
             "INSERT INTO users (login, tg_handle, email) VALUES ($1, $2, $3) RETURNING id",
