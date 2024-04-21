@@ -4,7 +4,7 @@ use std::{
 };
 
 use secrecy::{ExposeSecret, Secret};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
     postgres::{PgConnectOptions, PgSslMode},
@@ -14,15 +14,24 @@ use sqlx::{
 #[derive(Deserialize, Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
+    pub ldap: LdapSettings,
     pub app: AppSettings,
 }
 
+#[derive(Deserialize, Clone)]
+pub struct LdapSettings {
+    pub url: String,
+    pub use_tls: bool,
+    pub no_tls_verify: bool,
+}
 #[derive(Deserialize, Clone)]
 pub struct AppSettings {
     pub host: IpAddr,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub base_url: String,
+    #[serde(deserialize_with = "deserialize_key_secret")]
+    pub hmac_secret: Vec<u8>,
 }
 
 impl AppSettings {
@@ -108,4 +117,18 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
         .add_source(config::Environment::with_prefix("app"))
         .build()?
         .try_deserialize()
+}
+
+fn deserialize_key_secret<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let secret: Vec<u8> = String::deserialize(deserializer)?.into();
+    if secret.len() < 32 {
+        return Err(serde::de::Error::custom(
+            "Secret string must be at least 32 bytes long",
+        ));
+    }
+
+    Ok(secret)
 }
