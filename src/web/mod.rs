@@ -27,13 +27,13 @@ use self::{
         login,
         middleware::{auth_middleware, Backend},
     },
-    hosts::get_hosts,
+    hosts::{get_hosts, lease_hosts, lease_random, release_all, release_hosts},
 };
-use crate::{configuration::Settings, db::Registry};
+use crate::{configuration::Settings, db::Registry, logic::hosts::HostsService};
 
 #[derive(FromRef, Clone)]
 struct AppState {
-    registry: Registry,
+    service: HostsService,
     flash_config: axum_flash::Config,
 }
 
@@ -64,7 +64,12 @@ impl Application {
         )
         .build();
 
-        let authed_router = Router::new().route("/hosts", get(get_hosts));
+        let authed_router = Router::new()
+            .route("/hosts", get(get_hosts))
+            .route("/hosts/lease", post(lease_hosts))
+            .route("/hosts/lease/random", post(lease_random))
+            .route("/hosts/release", post(release_hosts))
+            .route("/hosts/release/all", post(release_all));
 
         let app = Router::new()
             .route("/login", post(login::login).get(login::login_page))
@@ -73,7 +78,7 @@ impl Application {
             .layer(auth_layer)
             .layer(tracing_layer)
             .with_state(AppState {
-                registry,
+                service: HostsService::new(registry),
                 flash_config: axum_flash::Config::new(Key::derive_from(&settings.app.hmac_secret)),
             });
 

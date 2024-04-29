@@ -35,7 +35,7 @@ uuid = { version = "1.3", features = ["v4"] }
 
 [dependencies.axum-extra]
 version = "0.9"
-features = ["cookie", "cookie-signed", "cookie-key-expansion"]
+features = ["cookie", "cookie-signed", "cookie-key-expansion", "form"]
 
 [dependencies.stated_dialogues]
 git = "https://github.com/goDeni/stated_dialogues.git"

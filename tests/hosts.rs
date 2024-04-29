@@ -1,18 +1,18 @@
 pub mod support;
 
-use anyhow::{Ok, Result};
-use chrono::{TimeDelta, Utc};
-use stand_control_bot::{db::models::HostId, logic::hosts::*};
+use std::collections::HashSet;
 
-use crate::support::registry::create_registry;
+use chrono::{TimeDelta, Utc};
+use stand_control_bot::db::models::HostId;
+
+use crate::support::registry::{create_registry, create_service};
 
 #[tokio::test]
 async fn leasing_host_adds_them_to_user_leased_hosts() {
-    let (mut gen, registry) = create_registry().await;
+    let (mut gen, hosts_service) = create_service().await;
     let leased_host = gen.generate_host().await;
     let free = gen.generate_host().await;
     let user = gen.generate_user().await;
-    let hosts_service = HostsService::new(registry);
 
     let leased = hosts_service
         .lease(&user.id, &[leased_host.id], TimeDelta::seconds(42))
@@ -22,8 +22,7 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
     assert_eq!(leased.len(), 1);
     assert_eq!(leased[0].id, leased_host.id);
     assert_eq!(leased[0].user.id, user.id);
-    assert!(leased[0].leased_until.is_some());
-    assert!(Utc::now() < leased[0].leased_until.unwrap());
+    assert!(Utc::now() < leased[0].leased_until);
 
     let available_hosts = hosts_service.get_available_hosts().await.unwrap();
 
@@ -34,11 +33,10 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
 
 #[tokio::test]
 async fn leasing_random_host_leases_one_host() {
-    let (mut gen, registry) = create_registry().await;
+    let (mut gen, hosts_service) = create_service().await;
     let host1 = gen.generate_host().await;
     let host2 = gen.generate_host().await;
     let user = gen.generate_user().await;
-    let hosts_service = HostsService::new(registry);
 
     let leased = hosts_service
         .lease_random(&user.id, TimeDelta::seconds(42))
@@ -49,55 +47,124 @@ async fn leasing_random_host_leases_one_host() {
 }
 
 #[tokio::test]
-async fn free_host() {
-    let (mut gen, registry) = create_registry().await;
-
-    gen.generate_host().await;
+async fn leasing_multiple_hosts() {
+    let (mut gen, service) = create_service().await;
+    let host1 = gen.generate_host().await;
+    let host2 = gen.generate_host().await;
+    let host3 = gen.generate_host().await;
     let user = gen.generate_user().await;
-    let hosts_service = HostsService::new(registry);
 
-    let leased = hosts_service
+    service
+        .lease(&user.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    service
         .lease_random(&user.id, TimeDelta::seconds(42))
         .await
         .unwrap();
 
-    hosts_service.free(&user.id, &[leased.id]).await.unwrap();
-    let hosts = hosts_service.get_available_hosts().await.unwrap();
+    let available = service.get_available_hosts().await.unwrap();
+    assert!(available.is_empty());
 
-    assert!(hosts
-        .iter()
-        .map(|h| h.id)
-        .collect::<Vec<HostId>>()
-        .contains(&leased.id));
+    let leased = service.get_leased_hosts(&user.id).await.unwrap();
+
+    assert_eq!(
+        HashSet::from([host1.id, host2.id, host3.id]),
+        leased.into_iter().map(|h| h.id).collect::<HashSet<_>>()
+    )
 }
 
 #[tokio::test]
-async fn leased_until_read() -> Result<()> {
+async fn freeing_host_makes_it_available_for_lease() {
+    let (mut gen, service) = create_service().await;
+    let host1 = gen.generate_host().await;
+    let host2 = gen.generate_host().await;
+    let user = gen.generate_user().await;
+
+    let available = service.get_available_hosts().await.unwrap();
+    assert_eq!(available.len(), 2);
+
+    service
+        .lease(&user.id, &[host1.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    let available = service.get_available_hosts().await.unwrap();
+    assert_eq!(available.len(), 1);
+    assert_eq!(available[0].id, host2.id);
+
+    service.free(&user.id, &[host1.id]).await.unwrap();
+
+    let available = service.get_available_hosts().await.unwrap();
+    assert_eq!(available.len(), 2);
+    assert_eq!(
+        available.into_iter().map(|h| h.id).collect::<HashSet<_>>(),
+        HashSet::from([host1.id, host2.id])
+    );
+}
+
+#[tokio::test]
+async fn free_all_frees_hosts_only_for_one_user() {
+    let (mut gen, service) = create_service().await;
+    let host1 = gen.generate_host().await;
+    let host2 = gen.generate_host().await;
+    let host3 = gen.generate_host().await;
+    let user1 = gen.generate_user().await;
+    let user2 = gen.generate_user().await;
+
+    service
+        .lease(&user1.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    service
+        .lease(&user2.id, &[host3.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    let available = service.get_available_hosts().await.unwrap();
+    assert!(available.is_empty());
+
+    service.free_all(&user1.id).await.unwrap();
+
+    let available = service.get_available_hosts().await.unwrap();
+    assert_eq!(available.len(), 2);
+    let leased_u1 = service.get_leased_hosts(&user1.id).await.unwrap();
+    assert!(leased_u1.is_empty());
+
+    let leased_u2 = service.get_leased_hosts(&user2.id).await.unwrap();
+    assert_eq!(leased_u2.len(), 1);
+}
+
+#[tokio::test]
+async fn leased_until_read() {
     let (mut gen, registry) = create_registry().await;
 
     let host = gen.generate_host().await;
     let user = gen.generate_user().await;
 
-    let mut tx = registry.begin().await?;
+    let mut tx = registry.begin().await.unwrap();
 
     let date = Utc::now();
     let lease_time = 30;
 
     tx.lease_hosts(&user.id, &[host.id], date + TimeDelta::seconds(lease_time))
-        .await?;
+        .await
+        .unwrap();
 
     let hosts_ids = tx
         .get_leased_until_hosts(date + TimeDelta::seconds(lease_time - 1))
-        .await?;
+        .await
+        .unwrap();
     assert!(hosts_ids.is_empty());
 
     let hosts_ids: Vec<HostId> = tx
         .get_leased_until_hosts(date + TimeDelta::seconds(lease_time + 1))
-        .await?
+        .await
+        .unwrap()
         .into_iter()
         .map(|h| h.id)
         .collect();
     assert_eq!(hosts_ids.to_vec(), vec![host.id]);
-
-    Ok(())
 }

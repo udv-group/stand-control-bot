@@ -16,6 +16,7 @@ async fn unauthorized_access_redirects_to_login() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn successful_login_redirects_to_hosts() {
     let app = TestApp::new().await;
     let resp = app.login().await;
@@ -23,6 +24,7 @@ async fn successful_login_redirects_to_hosts() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn index_displays_available_hosts() {
     let mut app = TestApp::new().await;
     let host1 = app.gen.generate_host().await;

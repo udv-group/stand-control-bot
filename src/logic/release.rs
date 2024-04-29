@@ -35,17 +35,16 @@ async fn release<T: BotAdapter>(registry: &Registry, notifier: &Notifier<T>) -> 
     tx.commit().await?;
 
     let mut notifications: HashMap<UserId, Vec<HostId>> = HashMap::new();
-    hosts.into_iter().for_each(|host| {
-        if let Some(hosts) = notifications.get_mut(&host.user.id) {
-            hosts.push(host.id);
-        } else {
-            notifications.insert(host.user.id, vec![host.id]);
-        }
-    });
+    for host in hosts {
+        notifications
+            .entry(host.user.id)
+            .and_modify(|v| v.push(host.id))
+            .or_insert(vec![host.id]);
+    }
 
     for (user_id, hosts_ids) in notifications {
         if let Err(err) = notifier
-            .notify(Notification::HostsRelased((hosts_ids.clone(), user_id)))
+            .notify(Notification::HostsReleased((hosts_ids.clone(), user_id)))
             .await
         {
             error!(
