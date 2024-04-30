@@ -1,6 +1,5 @@
 use anyhow::{Context, Ok, Result};
 use stated_dialogues::controller::BotAdapter;
-use tokio::sync::mpsc::{self, Receiver, Sender};
 
 use crate::db::{
     models::{HostId, UserId},
@@ -13,7 +12,6 @@ pub enum Notification {
 }
 
 pub struct Notifier<T: BotAdapter> {
-    receiver: Receiver<Notification>,
     registry: Registry,
     tg_adapter: T,
 }
@@ -22,27 +20,14 @@ impl<T> Notifier<T>
 where
     T: BotAdapter,
 {
-    pub fn create(registry: Registry, tg_adapter: T) -> (Sender<Notification>, Self) {
-        let (sender, receiver) = mpsc::channel::<Notification>(32);
-        (
-            sender,
-            Self {
-                receiver,
-                registry,
-                tg_adapter,
-            },
-        )
-    }
-
-    pub async fn work(mut self) {
-        while let Some(notification) = self.receiver.recv().await {
-            if let Err(err) = self.handle(&notification).await {
-                tracing::error!("Failed notification handle {:?}: {}", notification, err)
-            }
+    pub fn new(registry: Registry, tg_adapter: T) -> Self {
+        Self {
+            registry,
+            tg_adapter,
         }
     }
 
-    async fn handle(&self, notification: &Notification) -> Result<()> {
+    pub async fn notify(&self, notification: Notification) -> Result<()> {
         match notification {
             Notification::HostRelased((host_id, user_id)) => {
                 let mut tx = self
@@ -51,9 +36,9 @@ where
                     .await
                     .with_context(|| "Failed begin transaction")?;
 
-                let host = tx.get_host(host_id).await?;
+                let host = tx.get_host(&host_id).await?;
                 let tg_handle = tx
-                    .get_user_by_id(user_id)
+                    .get_user_by_id(&user_id)
                     .await
                     .with_context(|| format!("Failed read user {:?}", user_id))?
                     .with_context(|| format!("User ({:?}) doesn't exist", user_id))?

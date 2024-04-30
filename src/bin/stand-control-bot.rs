@@ -24,17 +24,14 @@ async fn main() -> Result<(), anyhow::Error> {
     let bot = Bot::from_env();
     let registry = Registry::new(&settings.database).await?;
 
-    let (sender, notifier) = Notifier::create(registry.clone(), TeloxideAdapter::new(bot.clone()));
+    let notifier = Notifier::new(registry.clone(), TeloxideAdapter::new(bot.clone()));
 
     let server = Application::build(&settings).await?;
     select! {
         _ = server.serve_forever() => {
             info!("Server exited")
         }
-        _ = notifier.work() => {
-            info!("Notifier exited")
-        }
-        _ = hosts_release_timer(registry, sender) => {
+        _ = hosts_release_timer(registry, notifier) => {
             info!("Hosts release timer exited")
         }
     };

@@ -1,24 +1,25 @@
 use std::time::Duration;
 
 use chrono::Utc;
-use tokio::{sync::mpsc::Sender, time::sleep};
+use stated_dialogues::controller::BotAdapter;
+use tokio::time::sleep;
 
 use crate::db::{models::HostId, Registry};
 use anyhow::Result;
 
-use super::notifications::Notification;
+use super::notifications::{Notification, Notifier};
 use tracing::error;
 
-pub async fn hosts_release_timer(registry: Registry, sender: Sender<Notification>) {
+pub async fn hosts_release_timer<T: BotAdapter>(registry: Registry, notifier: Notifier<T>) {
     loop {
-        if let Err(err) = release(&registry, &sender).await {
+        if let Err(err) = release(&registry, &notifier).await {
             error!("Release fail: {err}")
         }
         sleep(Duration::from_secs(10)).await;
     }
 }
 
-async fn release(registry: &Registry, sender: &Sender<Notification>) -> Result<()> {
+async fn release<T: BotAdapter>(registry: &Registry, notifier: &Notifier<T>) -> Result<()> {
     let mut tx = registry.begin().await?;
 
     let hosts = tx.get_leased_until_hosts(Utc::now()).await?;
@@ -31,8 +32,8 @@ async fn release(registry: &Registry, sender: &Sender<Notification>) -> Result<(
     tx.commit().await?;
 
     for host in hosts {
-        sender
-            .send(Notification::HostRelased((host.id, host.user.id)))
+        notifier
+            .notify(Notification::HostRelased((host.id, host.user.id)))
             .await?;
     }
     Ok(())

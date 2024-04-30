@@ -1,12 +1,10 @@
 pub mod support;
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use crate::support::registry::create_registry;
 use async_cell::sync::AsyncCell;
 use stand_control_bot::logic::notifications::{Notification, Notifier};
-use tokio::time::sleep;
 
 use anyhow::{Context, Result};
 use stated_dialogues::{controller::BotAdapter, dialogues::MessageId};
@@ -58,14 +56,11 @@ async fn notification_send() -> Result<()> {
     let host = test_registry.generate_host().await;
     let user = test_registry.generate_user().await;
 
-    let (sender, receiver) = Notifier::create(registry, test_adapter);
-    let task = tokio::spawn(receiver.work());
+    let notifier = Notifier::new(registry, test_adapter);
 
-    sender
-        .send(Notification::HostRelased((host.id, user.id)))
+    notifier
+        .notify(Notification::HostRelased((host.id, user.id)))
         .await?;
-
-    sleep(Duration::from_secs(1)).await;
     let user_id = sent
         .try_take()
         .unwrap()
@@ -73,7 +68,5 @@ async fn notification_send() -> Result<()> {
         .with_context(|| "Failed receive expected message")?;
     assert_eq!(user_id, user.tg_handle);
 
-    task.abort();
-    assert!(task.await.unwrap_err().is_cancelled());
     Ok(())
 }
