@@ -55,9 +55,9 @@ pub struct Credentials {
 
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
-    #[error("")]
+    #[error("Failed to connec to to ldap")]
     LdapConnError(#[from] LdapError),
-    #[error("")]
+    #[error("Database error")]
     DbError(#[from] sqlx::Error),
 }
 

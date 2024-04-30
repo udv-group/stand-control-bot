@@ -23,6 +23,7 @@ impl From<i32> for UserId {
 }
 
 #[derive(sqlx::Type, Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[serde(try_from = "String")]
 #[sqlx(transparent)]
 pub struct HostId(pub i32);
 impl Display for HostId {
@@ -35,6 +36,15 @@ impl Deref for HostId {
     type Target = i32;
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+impl TryFrom<String> for HostId {
+    type Error = String;
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.parse::<i32>() {
+            Ok(v) => Ok(Self(v)),
+            Err(_) => Err(format!("Wrong value {value}, can not parse to as i32")),
+        }
     }
 }
 
@@ -50,7 +60,7 @@ pub struct LeasedHost {
     pub id: HostId,
     pub hostname: String,
     pub ip_address: IpNetwork,
-    pub leased_until: Option<DateTime<Utc>>,
+    pub leased_until: DateTime<Utc>,
     #[sqlx(flatten)]
     pub user: User,
 }

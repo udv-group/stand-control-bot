@@ -6,5 +6,5 @@ hmac_secret = "this-is-a-very-long-secret-string!"
 require_ssl = false
 [ldap]
 url = "ldap://localhost:2389"
-use_tls = true
+use_tls = false
 no_tls_verify = true

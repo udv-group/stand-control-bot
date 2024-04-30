@@ -13,6 +13,7 @@ pub struct Generator {
 }
 pub struct MockHost {
     pub id: HostId,
+    pub hostname: String,
     pub ip: Ipv4Addr,
 }
 pub struct MockUser {
@@ -35,6 +36,7 @@ impl Generator {
         .unwrap();
         MockHost {
             id: row.id.into(),
+            hostname,
             ip,
         }
     }

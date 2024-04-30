@@ -23,6 +23,7 @@ pub enum HostError {
     NotificationSendError(#[from] SendError<Notification>),
 }
 
+#[derive(Clone)]
 pub struct HostsService {
     registry: Registry,
 }
@@ -35,6 +36,13 @@ impl HostsService {
     pub async fn get_available_hosts(&self) -> Result<Vec<Host>, HostError> {
         let mut tx = self.registry.begin().await?;
         let hosts = tx.get_available_hosts().await?;
+        tx.commit().await?;
+        Ok(hosts)
+    }
+
+    pub async fn get_leased_hosts(&self, user_id: &UserId) -> Result<Vec<LeasedHost>, HostError> {
+        let mut tx = self.registry.begin().await?;
+        let hosts = tx.get_leased_hosts(user_id).await?;
         tx.commit().await?;
         Ok(hosts)
     }
@@ -70,22 +78,8 @@ impl HostsService {
 
     pub async fn free(&self, user_id: &UserId, hosts_ids: &[HostId]) -> Result<(), HostError> {
         let mut tx = self.registry.begin().await?;
-
-        let leased_ids: HashSet<HostId> = HashSet::from_iter(
-            tx.get_leased_hosts(user_id)
-                .await?
-                .into_iter()
-                .map(|host| host.id),
-        );
-
-        let hosts_ids = HashSet::<HostId>::from_iter(hosts_ids.to_vec())
-            .intersection(&leased_ids)
-            .copied()
-            .collect::<Vec<HostId>>();
-
-        tx.free_hosts(hosts_ids.as_ref()).await?;
+        tx.free_hosts_for_user(hosts_ids.as_ref(), user_id).await?;
         tx.commit().await?;
-
         Ok(())
     }
 

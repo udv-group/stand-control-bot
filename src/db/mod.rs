@@ -96,11 +96,26 @@ impl<'c> RegistryTx<'c> {
         .await?;
         Ok(())
     }
+    pub async fn free_hosts_for_user(
+        &mut self,
+        hosts_ids: &[HostId],
+        user_id: &UserId,
+    ) -> sqlx::Result<()> {
+        let ids: Vec<_> = hosts_ids.iter().map(|h| h.0).collect();
+        sqlx::query!(
+            "UPDATE hosts SET user_id = NULL, leased_until = NULL WHERE id = any($1) AND user_id = $2",
+            ids.as_slice(),
+            user_id.deref(),
+        )
+        .execute(&mut *self.tx)
+        .await?;
+        Ok(())
+    }
     pub async fn free_hosts(&mut self, hosts_ids: &[HostId]) -> sqlx::Result<()> {
         let ids: Vec<_> = hosts_ids.iter().map(|h| h.0).collect();
         sqlx::query!(
             "UPDATE hosts SET user_id = NULL, leased_until = NULL WHERE id = any($1)",
-            ids.as_slice()
+            ids.as_slice(),
         )
         .execute(&mut *self.tx)
         .await?;
