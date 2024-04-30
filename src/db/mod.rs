@@ -52,7 +52,7 @@ impl<'c> RegistryTx<'c> {
     pub async fn get_leased_hosts(&mut self, user_id: &UserId) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
             FROM hosts JOIN users on hosts.user_id = users.id 
             WHERE hosts.user_id = $1
             "#,
@@ -66,7 +66,7 @@ impl<'c> RegistryTx<'c> {
     ) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
             FROM hosts JOIN users on hosts.user_id = users.id
             WHERE hosts.leased_until < $1
             "#,

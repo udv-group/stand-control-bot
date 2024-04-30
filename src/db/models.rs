@@ -46,6 +46,7 @@ impl From<i32> for HostId {
 
 #[derive(Serialize, Deserialize, Clone, Debug, FromRow)]
 pub struct LeasedHost {
+    #[sqlx(rename = "hid")]
     pub id: HostId,
     pub hostname: String,
     pub ip_address: IpNetwork,
