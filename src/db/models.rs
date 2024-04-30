@@ -5,7 +5,7 @@ use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 
-#[derive(sqlx::Type, Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(sqlx::Type, Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[sqlx(transparent)]
 pub struct UserId(pub i32);
 
@@ -22,7 +22,7 @@ impl From<i32> for UserId {
     }
 }
 
-#[derive(sqlx::Type, Deserialize, Serialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(sqlx::Type, Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[sqlx(transparent)]
 pub struct HostId(pub i32);
 impl Display for HostId {
@@ -46,6 +46,7 @@ impl From<i32> for HostId {
 
 #[derive(Serialize, Deserialize, Clone, Debug, FromRow)]
 pub struct LeasedHost {
+    #[sqlx(rename = "hid")]
     pub id: HostId,
     pub hostname: String,
     pub ip_address: IpNetwork,

@@ -4,6 +4,7 @@ use fake::{Fake, Faker};
 use ipnetwork::IpNetwork;
 use sqlx::PgPool;
 
+use rand::Rng;
 use stand_control_bot::db::models::{HostId, UserId};
 use uuid::Uuid;
 
@@ -14,6 +15,11 @@ pub struct MockHost {
     pub id: HostId,
     pub ip: Ipv4Addr,
 }
+pub struct MockUser {
+    pub id: UserId,
+    pub tg_handle: String,
+}
+
 impl Generator {
     pub async fn generate_host(&mut self) -> MockHost {
         let hostname = Uuid::new_v4().to_string();
@@ -32,12 +38,24 @@ impl Generator {
             ip,
         }
     }
-    pub async fn generate_user(&mut self) -> UserId {
+    pub async fn generate_user(&mut self) -> MockUser {
+        let mut rng = rand::thread_rng();
+
         let login = Uuid::new_v4().to_string();
-        let row = sqlx::query!("INSERT INTO users (login) VALUES ($1) RETURNING id", login)
-            .fetch_one(&self.pool)
-            .await
-            .unwrap();
-        row.id.into()
+        let tg_handle = rng.gen::<u64>().to_string();
+
+        let row = sqlx::query!(
+            "INSERT INTO users (login, tg_handle) VALUES ($1, $2) RETURNING id",
+            login,
+            tg_handle
+        )
+        .fetch_one(&self.pool)
+        .await
+        .unwrap();
+
+        MockUser {
+            id: row.id.into(),
+            tg_handle,
+        }
     }
 }

@@ -43,16 +43,40 @@ impl<'c> RegistryTx<'c> {
             .fetch_one(&mut *self.tx)
             .await
     }
+    pub async fn get_host(&mut self, host_id: &HostId) -> sqlx::Result<Host> {
+        sqlx::query_as("SELECT * FROM hosts WHERE id = $1 LIMIT 1")
+            .bind(host_id.deref())
+            .fetch_one(&mut *self.tx)
+            .await
+    }
+    pub async fn get_hosts(&mut self, hosts_ids: &[HostId]) -> sqlx::Result<Vec<Host>> {
+        sqlx::query_as("SELECT * FROM hosts WHERE id = any($1)")
+            .bind(hosts_ids)
+            .fetch_all(&mut *self.tx)
+            .await
+    }
     pub async fn get_leased_hosts(&mut self, user_id: &UserId) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
             FROM hosts JOIN users on hosts.user_id = users.id 
             WHERE hosts.user_id = $1
             "#,
         ).bind(user_id.deref())
         .fetch_all(&mut *self.tx)
         .await
+    }
+    pub async fn get_leased_until_hosts(
+        &mut self,
+        until: DateTime<Utc>,
+    ) -> sqlx::Result<Vec<LeasedHost>> {
+        sqlx::query_as(
+            r#"
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
+            FROM hosts JOIN users on hosts.user_id = users.id
+            WHERE hosts.leased_until < $1
+            "#,
+        ).bind(until).fetch_all(&mut *self.tx).await
     }
     pub async fn lease_hosts(
         &mut self,
