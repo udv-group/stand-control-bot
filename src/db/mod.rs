@@ -49,6 +49,12 @@ impl<'c> RegistryTx<'c> {
             .fetch_one(&mut *self.tx)
             .await
     }
+    pub async fn get_hosts(&mut self, hosts_ids: &[HostId]) -> sqlx::Result<Vec<Host>> {
+        sqlx::query_as("SELECT * FROM hosts WHERE id = any($1)")
+            .bind(hosts_ids)
+            .fetch_all(&mut *self.tx)
+            .await
+    }
     pub async fn get_leased_hosts(&mut self, user_id: &UserId) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"

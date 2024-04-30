@@ -1,10 +1,13 @@
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use chrono::Utc;
 use stated_dialogues::controller::BotAdapter;
 use tokio::time::sleep;
 
-use crate::db::{models::HostId, Registry};
+use crate::db::{
+    models::{HostId, UserId},
+    Registry,
+};
 use anyhow::Result;
 
 use super::notifications::{Notification, Notifier};
@@ -31,10 +34,26 @@ async fn release<T: BotAdapter>(registry: &Registry, notifier: &Notifier<T>) -> 
         .await?;
     tx.commit().await?;
 
-    for host in hosts {
-        notifier
-            .notify(Notification::HostRelased((host.id, host.user.id)))
-            .await?;
+    let mut notifications: HashMap<UserId, Vec<HostId>> = HashMap::new();
+    hosts.into_iter().for_each(|host| {
+        if let Some(hosts) = notifications.get_mut(&host.user.id) {
+            hosts.push(host.id);
+        } else {
+            notifications.insert(host.user.id, vec![host.id]);
+        }
+    });
+
+    for (user_id, hosts_ids) in notifications {
+        if let Err(err) = notifier
+            .notify(Notification::HostsRelased((hosts_ids.clone(), user_id)))
+            .await
+        {
+            error!(
+                "Notification sending error {:?} {:?}: {err}",
+                user_id, hosts_ids
+            );
+        }
     }
+
     Ok(())
 }

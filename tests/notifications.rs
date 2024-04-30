@@ -59,7 +59,7 @@ async fn notification_send() -> Result<()> {
     let notifier = Notifier::new(registry, test_adapter);
 
     notifier
-        .notify(Notification::HostRelased((host.id, user.id)))
+        .notify(Notification::HostsRelased((vec![host.id], user.id)))
         .await?;
     let user_id = sent
         .try_take()
