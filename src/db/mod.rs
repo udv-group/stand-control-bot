@@ -58,7 +58,7 @@ impl<'c> RegistryTx<'c> {
     pub async fn get_leased_hosts(&mut self, user_id: &UserId) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email, users.link 
             FROM hosts JOIN users on hosts.user_id = users.id 
             WHERE hosts.user_id = $1
             "#,
@@ -72,7 +72,7 @@ impl<'c> RegistryTx<'c> {
     ) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email, users.link  
             FROM hosts JOIN users on hosts.user_id = users.id
             WHERE hosts.leased_until < $1
             "#,
@@ -139,6 +139,25 @@ impl<'c> RegistryTx<'c> {
         sqlx::query_as!(User, "SELECT * FROM users WHERE login = $1", login)
             .fetch_optional(&mut *self.tx)
             .await
+    }
+    pub async fn get_user_by_link(&mut self, link: &str) -> sqlx::Result<Option<User>> {
+        sqlx::query_as!(User, "SELECT * FROM users WHERE link = $1", link)
+            .fetch_optional(&mut *self.tx)
+            .await
+    }
+    pub async fn set_user_tg_handle(
+        &mut self,
+        user_id: &UserId,
+        tg_handle: &str,
+    ) -> sqlx::Result<()> {
+        sqlx::query!(
+            "UPDATE users SET tg_handle = $1 WHERE id = $2",
+            tg_handle,
+            user_id.deref(),
+        )
+        .execute(&mut *self.tx)
+        .await?;
+        Ok(())
     }
     pub async fn add_user(
         &mut self,

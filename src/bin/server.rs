@@ -8,7 +8,7 @@ async fn main() -> Result<(), anyhow::Error> {
     init_tracing();
     set_env();
 
-    let server = Application::build(&settings).await?;
+    let server = Application::build(&settings, "bot_username".into()).await?;
 
     server.serve_forever().await?;
     Ok(())

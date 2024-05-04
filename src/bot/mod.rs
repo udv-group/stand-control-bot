@@ -1,6 +1,9 @@
 pub mod handlers;
 
+use self::handlers::build_handler;
+use crate::{dialogues::link_account::LinkAccountDialogue, logic::users::UsersService};
 use anyhow::Result;
+use async_trait::async_trait;
 use stated_dialogues::controller::{
     teloxide::TeloxideAdapter, CtxResult, DialCtxActions, DialogueController,
 };
@@ -13,9 +16,6 @@ use teloxide::{
     Bot,
 };
 use tokio::sync::RwLock;
-
-use self::handlers::build_handler;
-use crate::dialogues::hello::HelloDialogue;
 
 #[derive(Clone, Default, Debug)]
 pub enum BotState {
@@ -37,23 +37,26 @@ pub struct BotContext {
 
 pub struct DialContext {
     pub dial_ctxs: HashMap<UserId, DialogueController>,
+    pub users_service: UsersService,
 }
 
 impl BotContext {
-    pub fn new(bot: Bot) -> Self {
+    pub fn new(bot: Bot, users_service: UsersService) -> Self {
         BotContext {
             dial: Arc::new(RwLock::new(DialContext {
                 dial_ctxs: HashMap::new(),
+                users_service,
             })),
             bot_adapter: Arc::new(TeloxideAdapter::new(bot)),
         }
     }
 }
 
+#[async_trait]
 impl DialCtxActions for DialContext {
-    fn new_controller(&self, _user_id: u64) -> Result<(DialogueController, Vec<CtxResult>)> {
-        let context = HelloDialogue::new();
-        DialogueController::create(context)
+    async fn new_controller(&self, _user_id: u64) -> Result<(DialogueController, Vec<CtxResult>)> {
+        let context = LinkAccountDialogue::new(self.users_service.clone());
+        DialogueController::create(context).await
     }
 
     fn take_controller(&mut self, user_id: &u64) -> Option<DialogueController> {
@@ -72,12 +75,17 @@ impl DialCtxActions for DialContext {
     }
 }
 
-pub fn build_tg_bot(bot: Bot) -> Dispatcher<Bot, Box<dyn Error + Send + Sync>, DefaultKey> {
+pub fn build_tg_bot(
+    bot: Bot,
+    context: BotContext,
+) -> Dispatcher<Bot, Box<dyn Error + Send + Sync>, DefaultKey> {
     tracing::info!("Starting stand-control");
-    let context = Arc::new(BotContext::new(bot.clone()));
 
     Dispatcher::builder(bot, build_handler())
-        .dependencies(dptree::deps![InMemStorage::<BotState>::new(), context])
+        .dependencies(dptree::deps![
+            InMemStorage::<BotState>::new(),
+            Arc::new(context)
+        ])
         .default_handler(|upd| async move {
             tracing::warn!("Unhandled update: {:?}", upd);
         })

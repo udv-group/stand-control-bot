@@ -9,6 +9,7 @@ default-run = "stand-control-bot"
 anyhow = "1.0.81"
 askama = { version = "0.12", features = ["with-axum"] }
 askama_axum = "0.4"
+async-trait = "0.1.80"
 axum = { version = "0.7.5", features = ["macros"] }
 axum-flash = "0.8.0"
 axum-login = "0.15.1"
@@ -39,7 +40,7 @@ features = ["cookie", "cookie-signed", "cookie-key-expansion", "form"]
 
 [dependencies.stated_dialogues]
 git = "https://github.com/goDeni/stated_dialogues.git"
-branch = "main"
+branch = "async-dial-context"
 features = ["teloxide-adapter"]
 
 [dependencies.tracing-subscriber]

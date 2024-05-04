@@ -80,4 +80,5 @@ pub struct User {
     pub login: String,
     pub tg_handle: Option<String>,
     pub email: Option<String>,
+    pub link: String,
 }

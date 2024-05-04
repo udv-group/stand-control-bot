@@ -2,14 +2,11 @@ use std::collections::HashSet;
 
 use chrono::Utc;
 use thiserror::Error;
-use tokio::sync::mpsc::error::SendError;
 
 use crate::db::{
     models::{Host, HostId, LeasedHost, UserId},
     Registry,
 };
-
-use super::notifications::Notification;
 
 #[derive(Error, Debug)]
 pub enum HostError {
@@ -18,9 +15,6 @@ pub enum HostError {
 
     #[error("Host is already leased")]
     AlreadyLeased(Vec<HostId>),
-
-    #[error("Notification sending error")]
-    NotificationSendError(#[from] SendError<Notification>),
 }
 
 #[derive(Clone)]
