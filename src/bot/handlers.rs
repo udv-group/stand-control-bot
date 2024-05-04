@@ -85,7 +85,12 @@ async fn handle_reset_command(msg: Message, context: Arc<BotContext>) -> Handler
     );
     let user_id = msg.from().unwrap().id;
     if let Some(old_controller) = context.dial.write().await.take_controller(&user_id.0) {
-        process_ctx_results(user_id.0, old_controller.shutdown()?, &context.bot_adapter).await?;
+        process_ctx_results(
+            user_id.0,
+            old_controller.shutdown().await?,
+            &context.bot_adapter,
+        )
+        .await?;
     }
 
     handle_interaction(

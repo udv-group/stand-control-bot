@@ -2,7 +2,8 @@ CREATE TABLE users (
     id serial PRIMARY KEY,
     login TEXT UNIQUE NOT NULL,
     tg_handle TEXT NULL,
-    email TEXT NULL
+    email TEXT NULL,
+    link TEXT UNIQUE NOT NULL DEFAULT gen_random_uuid()::TEXT
 );
 
 CREATE TABLE hosts (

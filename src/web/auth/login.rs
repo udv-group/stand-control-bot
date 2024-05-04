@@ -49,6 +49,16 @@ pub async fn login(
     Ok(Redirect::to("/hosts"))
 }
 
+#[tracing::instrument(skip(session))]
+pub async fn logout(mut session: AuthSession) -> axum::response::Result<Redirect> {
+    session
+        .logout()
+        .await
+        .map_err(|_| "Unexpected error".to_string())?;
+
+    Ok(Redirect::to("/login"))
+}
+
 pub fn flash_redirect(msg: &str, path: &str, flash: Flash) -> ErrorResponse {
     (flash.error(msg), Redirect::to(path))
         .into_response()

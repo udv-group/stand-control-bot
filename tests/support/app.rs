@@ -18,7 +18,9 @@ impl TestApp {
     pub async fn new() -> TestApp {
         let settings = setup_settings();
         let pool = configure_db(&settings.database).await;
-        let app = Application::build(&settings).await.unwrap();
+        let app = Application::build(&settings, "bot_username".into())
+            .await
+            .unwrap();
         let addr = app.listening_addr();
         mem::forget(tokio::spawn(app.serve_forever()));
         TestApp {

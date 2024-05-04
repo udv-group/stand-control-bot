@@ -5,6 +5,35 @@
     <div class="row">
         <div class="col">
             <div class="table-responsive-sm">
+                <fieldset>
+                    <legend>Account</legend>
+                    <div align="right">
+                        <a href="/logout">Logout</a>
+                    </div>
+                    <p> Login: {{user.login}} </p>
+                    <p> Telegram linked: {{user.tg_linked}} </p>
+                    <dialog>
+                        <p>Send code "{{user.link}}" to the bot</p>
+                        <p>Telegram bot: <a href="https://t.me/{{bot_username}}" target="_blank">{{bot_username}}</a></p>
+                        <br>
+                        <button autofocus>Close</button>
+                    </dialog>
+                    <button>Link telegram</button>
+                    <script>
+                        const dialog = document.querySelector("dialog");
+                        const showButton = document.querySelector("dialog + button");
+                        const closeButton = document.querySelector("dialog button");
+
+                        showButton.addEventListener("click", () => {
+                            dialog.showModal();
+                        });
+
+                        closeButton.addEventListener("click", () => {
+                            dialog.close();
+                        });
+                    </script>
+                </fieldset>
+                <br>
                 <form hx-post="/hosts/lease" , hx-target="body">
                     <fieldset>
                         <legend>Available hosts</legend>

@@ -12,7 +12,7 @@ use crate::db::Registry;
 #[derive(Debug, Clone)]
 pub struct User {
     id: i32,
-    username: String,
+    pub username: String,
     session_token: Vec<u8>,
 }
 

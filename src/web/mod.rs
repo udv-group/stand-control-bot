@@ -29,12 +29,18 @@ use self::{
     },
     hosts::{get_hosts, lease_hosts, lease_random, release_all, release_hosts},
 };
-use crate::{configuration::Settings, db::Registry, logic::hosts::HostsService};
+use crate::{
+    configuration::Settings,
+    db::Registry,
+    logic::{hosts::HostsService, users::UsersService},
+};
 
 #[derive(FromRef, Clone)]
 struct AppState {
     service: HostsService,
+    users_service: UsersService,
     flash_config: axum_flash::Config,
+    bot_username: String,
 }
 
 pub struct Application {
@@ -43,7 +49,10 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(settings: &Settings) -> Result<Application, anyhow::Error> {
+    pub async fn build(
+        settings: &Settings,
+        bot_username: String,
+    ) -> Result<Application, anyhow::Error> {
         let tracing_layer = TraceLayer::new_for_http().make_span_with(|req: &Request<Body>| {
                 let method = req.method();
                 let uri = req.uri();
@@ -65,6 +74,7 @@ impl Application {
         .build();
 
         let authed_router = Router::new()
+            .route("/logout", get(login::logout))
             .route("/hosts", get(get_hosts))
             .route("/hosts/lease", post(lease_hosts))
             .route("/hosts/lease/random", post(lease_random))
@@ -78,8 +88,10 @@ impl Application {
             .layer(auth_layer)
             .layer(tracing_layer)
             .with_state(AppState {
-                service: HostsService::new(registry),
+                service: HostsService::new(registry.clone()),
+                users_service: UsersService::new(registry),
                 flash_config: axum_flash::Config::new(Key::derive_from(&settings.app.hmac_secret)),
+                bot_username,
             });
 
         let listener = TcpListener::bind(settings.app.socket_addr()).await?;
