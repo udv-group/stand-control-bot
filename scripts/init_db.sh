@@ -44,7 +44,7 @@ sqlx database create
 sqlx migrate run
 >&2 echo "Postgres has been migrated, ready to go!"
 
-if [[ -z "${SEED_HOSTS}" ]]
+if [[ -z "${SKIP_SEED_HOSTS}" ]]
 then
     PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "${POSTGRES_DB}" -c "insert into hosts (hostname, ip_address) VALUES ('test', '172.0.0.1'), ('test2', '172.0.0.2');"
 fi

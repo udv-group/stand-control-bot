@@ -40,7 +40,7 @@ features = ["cookie", "cookie-signed", "cookie-key-expansion", "form"]
 
 [dependencies.stated_dialogues]
 git = "https://github.com/goDeni/stated_dialogues.git"
-branch = "async-dial-context"
+branch = "main"
 features = ["teloxide-adapter"]
 
 [dependencies.tracing-subscriber]
