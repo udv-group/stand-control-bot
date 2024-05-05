@@ -1,0 +1,14 @@
+<dialog>
+        <fieldset>
+                <legend>Account</legend>
+                <p> Login: {{user.login}} </p>
+                <p> Telegram linked: {{user.tg_linked}} </p>
+                {% if user.tg_linked %}
+                <p>To link your account send code "{{user.link}}" to the <a href="https://t.me/{{bot_username}}"
+                                target="_blank">{{bot_username}}</a></p>
+                <br>
+                {% else %}
+                <a href="/account/unlink"><button>Unlink</button></a>
+                {% endif %}
+                <button id="dialog-close" autofocus>Close</button>
+</dialog>

@@ -7,14 +7,29 @@ use secrecy::{ExposeSecret, Secret};
 use tracing::info;
 
 use crate::configuration::LdapSettings;
+use crate::db::models::User as DbUser;
 use crate::db::Registry;
 
 #[derive(Debug, Clone)]
 pub struct User {
     id: i32,
-    pub username: String,
+    pub login: String,
+    pub tg_handle: Option<String>,
+    pub link: String,
     session_token: Vec<u8>,
 }
+
+// impl From<DbUser> for User {
+//     fn from(user: DbUser) -> Self {
+//         Self {
+//             id: *user.id,
+//             login: user.login,
+//             tg_handle: user.tg_handle,
+//             link: user.link,
+//             session_token: user.link.into_bytes(),
+//         }
+//     }
+// }
 
 impl AuthUser for User {
     type Id = i32;
@@ -86,22 +101,19 @@ impl AuthnBackend for Backend {
             return Ok(None);
         }
         let user = self.registry.begin().await?.get_user(&username).await?;
-        let user_id = match user {
-            Some(u) => u.id,
+        let user = match user {
+            Some(u) => u,
             None => {
                 let mut tx = self.registry.begin().await?;
-                let uid = tx.add_user(&username, None, None).await?;
+                tx.add_user(&username, None, None).await?;
+                let user = tx.get_user(&username).await?;
                 tx.commit().await?;
-                uid
+                user
             }
         };
         // TODO: add real session token?
         let token = username.clone().into_bytes();
-        Ok(Some(User {
-            id: *user_id,
-            username,
-            session_token: token,
-        }))
+        Ok(Some(user.into()))
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
@@ -112,11 +124,7 @@ impl AuthnBackend for Backend {
             .await?
             .get_user_by_id(&user_id.into())
             .await?
-            .map(|u| User {
-                id: *u.id,
-                username: u.login.clone(),
-                session_token: u.login.as_bytes().to_vec(),
-            }))
+            .map(|u| u.into()))
     }
 }
 
@@ -127,7 +135,7 @@ pub async fn auth_middleware(
 ) -> Response {
     if let Some(user) = auth_session.user {
         let span = tracing::Span::current();
-        span.record("username", &tracing::field::display(&user.username));
+        span.record("username", &tracing::field::display(&user.login));
         span.record("user_id", &tracing::field::display(&user.id));
         request.extensions_mut().insert(user);
         next.run(request).await
