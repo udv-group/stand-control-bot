@@ -1,38 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
+
 <div class="container">
+    <div class="row">
+        <menu>
+            <li><button id="dialog-open">Account</button></li>
+            <li><a href="/logout"><button>Logout</button></a></li>
+        </menu>
+    </div>
     <div class="row">
         <div class="col">
             <div class="table-responsive-sm">
-                <fieldset>
-                    <legend>Account</legend>
-                    <div align="right">
-                        <a href="/logout">Logout</a>
-                    </div>
-                    <p> Login: {{user.login}} </p>
-                    <p> Telegram linked: {{user.tg_linked}} </p>
-                    <dialog>
-                        <p>Send code "{{user.link}}" to the bot</p>
-                        <p>Telegram bot: <a href="https://t.me/{{bot_username}}" target="_blank">{{bot_username}}</a></p>
-                        <br>
-                        <button autofocus>Close</button>
-                    </dialog>
-                    <button>Link telegram</button>
-                    <script>
-                        const dialog = document.querySelector("dialog");
-                        const showButton = document.querySelector("dialog + button");
-                        const closeButton = document.querySelector("dialog button");
-
-                        showButton.addEventListener("click", () => {
-                            dialog.showModal();
-                        });
-
-                        closeButton.addEventListener("click", () => {
-                            dialog.close();
-                        });
-                    </script>
-                </fieldset>
                 <br>
                 <form hx-post="/hosts/lease" , hx-target="body">
                     <fieldset>
@@ -71,4 +50,36 @@
         </div>
     </div>
 </div>
+<dialog>
+    <fieldset>
+        <legend>Account</legend>
+        <p> Login: {{user.login}} </p>
+        <p> Telegram linked: {{user.tg_linked}} </p>
+        <p>To link your account send code "{{user.link}}" to the <a href="{{auth_link}}"
+                target="_blank">{{auth_link}}</a></p>
+        <br>
+        <button id="dialog-close" autofocus>Close</button>
+</dialog>
+<script>
+    const dialog = document.querySelector("dialog");
+    const showButton = document.getElementById("dialog-open");
+    const closeButton = document.getElementById("dialog-close");
+
+    showButton.addEventListener("click", () => {
+        dialog.showModal();
+    });
+
+    closeButton.addEventListener("click", () => {
+        dialog.close();
+    });
+</script>
+<style>
+    menu {
+        list-style-type: none;
+        display: flex;
+        padding: 0;
+        margin-bottom: 0;
+        gap: 1em;
+    }
+</style>
 {% endblock content %}

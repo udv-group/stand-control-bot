@@ -18,16 +18,12 @@ impl UsersService {
         UsersService { registry }
     }
 
-    pub async fn get_user(&self, login: &str) -> Result<Option<User>, UserError> {
-        let mut tx = self.registry.begin().await?;
-        Ok(tx.get_user(login).await?)
-    }
-
     pub async fn link_user(&self, link: &str, tg_user_id: &str) -> Result<Option<User>, UserError> {
         let mut tx = self.registry.begin().await?;
         match tx.get_user_by_link(link).await? {
             Some(user) => {
                 tx.set_user_tg_handle(&user.id, tg_user_id).await?;
+                let user = tx.get_user_by_id(&user.id).await?.unwrap();
                 tx.commit().await?;
                 Ok(Some(user))
             }

@@ -40,8 +40,11 @@ struct AppState {
     service: HostsService,
     users_service: UsersService,
     flash_config: axum_flash::Config,
-    bot_username: String,
+    auth_link: AuthLink,
 }
+
+#[derive(Clone)]
+pub struct AuthLink(pub String);
 
 pub struct Application {
     listening_addr: SocketAddr,
@@ -51,7 +54,7 @@ pub struct Application {
 impl Application {
     pub async fn build(
         settings: &Settings,
-        bot_username: String,
+        auth_link: String,
     ) -> Result<Application, anyhow::Error> {
         let tracing_layer = TraceLayer::new_for_http().make_span_with(|req: &Request<Body>| {
                 let method = req.method();
@@ -91,7 +94,7 @@ impl Application {
                 service: HostsService::new(registry.clone()),
                 users_service: UsersService::new(registry),
                 flash_config: axum_flash::Config::new(Key::derive_from(&settings.app.hmac_secret)),
-                bot_username,
+                auth_link: AuthLink(auth_link),
             });
 
         let listener = TcpListener::bind(settings.app.socket_addr()).await?;
