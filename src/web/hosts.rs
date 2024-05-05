@@ -10,19 +10,19 @@ use chrono::{DateTime, TimeDelta, Utc};
 
 use serde::Deserialize;
 
-use crate::db::models::{Host, HostId, LeasedHost, User as UserDb};
+use crate::db::models::{Host, HostId, LeasedHost};
 use crate::logic::hosts::HostsService;
-use crate::logic::users::UsersService;
 
 use super::auth::middleware::User;
+use super::AuthLink;
 
 #[derive(Template, Debug)]
 #[template(path = "available_hosts.html", escape = "none")]
 struct HostsPage {
-    user: UserInfo,
     hosts: Vec<HostInfo>,
     leased: Vec<LeaseInfo>,
-    bot_username: String,
+    user: UserInfo,
+    auth_link: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -31,10 +31,10 @@ struct UserInfo {
     tg_linked: bool,
     link: String,
 }
-impl From<UserDb> for UserInfo {
-    fn from(value: UserDb) -> Self {
+impl From<User> for UserInfo {
+    fn from(value: User) -> Self {
         Self {
-            login: value.login,
+            login: value.username,
             tg_linked: value.tg_handle.is_some(),
             link: value.link,
         }
@@ -86,23 +86,17 @@ fn format_duration(duration: TimeDelta) -> String {
 
 pub async fn get_hosts(
     State(service): State<HostsService>,
-    State(users_service): State<UsersService>,
-    State(bot_username): State<String>,
+    State(AuthLink(auth_link)): State<AuthLink>,
     Extension(user): Extension<User>,
 ) -> Html<String> {
     let hosts = service.get_available_hosts().await.unwrap();
     let leased = service.get_leased_hosts(&user.id().into()).await.unwrap();
-    let user_db = users_service
-        .get_user(&user.username)
-        .await
-        .unwrap()
-        .unwrap();
 
     let page = HostsPage {
-        user: user_db.into(),
+        user: user.into(),
+        auth_link,
         hosts: hosts.into_iter().map(|h| h.into()).collect(),
         leased: leased.into_iter().map(|h| h.into()).collect(),
-        bot_username,
     };
 
     Html(page.render().unwrap())

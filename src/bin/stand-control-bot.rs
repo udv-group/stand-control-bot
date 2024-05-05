@@ -32,7 +32,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .with_context(|| "Bot hasn't username?!")?;
     let registry = Registry::new(&settings.database).await?;
     let notifier = Notifier::new(registry.clone(), TeloxideAdapter::new(bot.clone()));
-    let server = Application::build(&settings, bot_username).await?;
+    let server = Application::build(&settings, format!("https://t.me/{bot_username}")).await?;
 
     let bot_context = BotContext::new(bot.clone(), UsersService::new(registry.clone()));
     let dialogs_ttl_track = track_dialog_ttl(
