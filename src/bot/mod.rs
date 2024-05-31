@@ -28,6 +28,8 @@ pub enum BotState {
 enum Command {
     #[command(description = "Remove and initialize dialogue")]
     Reset,
+    #[command(description = "Start dialogue")]
+    Start,
 }
 
 pub struct BotContext {
