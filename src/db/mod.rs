@@ -34,7 +34,7 @@ impl<'c> RegistryTx<'c> {
     }
 
     pub async fn get_available_hosts(&mut self) -> sqlx::Result<Vec<Host>> {
-        sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL")
+        sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL ORDER BY hosts.ip_address ASC")
             .fetch_all(&mut *self.tx)
             .await
     }
@@ -60,7 +60,7 @@ impl<'c> RegistryTx<'c> {
             r#"
             SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email, users.link 
             FROM hosts JOIN users on hosts.user_id = users.id 
-            WHERE hosts.user_id = $1
+            WHERE hosts.user_id = $1 ORDER BY hosts.leased_until, hosts.ip_address ASC
             "#,
         ).bind(user_id.deref())
         .fetch_all(&mut *self.tx)
