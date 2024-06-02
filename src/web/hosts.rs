@@ -1,17 +1,18 @@
-use std::ops::Deref;
-
 use askama::Template;
 use axum::response::{IntoResponse, Redirect};
-use axum::Extension;
 use axum::{extract::State, response::Html};
+use axum::{Extension, Json};
 use axum_extra::extract::Form;
+use axum_extra::extract::OptionalQuery;
 use axum_login::AuthUser;
 use chrono::{DateTime, TimeDelta, Utc};
+use std::ops::Deref;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::db::models::{Host, HostId, LeasedHost};
 use crate::logic::hosts::HostsService;
+use crate::logic::users::UsersService;
 
 use super::auth::middleware::User;
 use super::AuthLink;
@@ -41,7 +42,7 @@ impl From<User> for UserInfo {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 struct HostInfo {
     id: HostId,
     hostname: String,
@@ -104,31 +105,55 @@ pub async fn get_hosts(
 
 #[derive(Deserialize)]
 #[serde(try_from = "String")]
-pub struct StrU8(pub u8);
+pub struct Days(pub i64);
 
-impl Deref for StrU8 {
-    type Target = u8;
+impl Deref for Days {
+    type Target = i64;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl TryFrom<String> for StrU8 {
+impl TryFrom<String> for Days {
     type Error = String;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value.parse::<u8>() {
-            Ok(v) => Ok(Self(v)),
+            Ok(v @ 0..=63) => Ok(Self(v as i64)),
+            Ok(_) => Err("Value must be between 0 and 63".to_string()),
             Err(_) => Err(format!("Wrong value {value}, can not parse as u8")),
         }
     }
 }
 
 #[derive(Deserialize)]
+#[serde(try_from = "String")]
+pub struct Hours(pub i64);
+
+impl Deref for Hours {
+    type Target = i64;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<String> for Hours {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.parse::<u8>() {
+            Ok(v @ 0..=23) => Ok(Self(v as i64)),
+            Ok(_) => Err("Value must be between 0 and 23".to_string()),
+            Err(_) => Err(format!("Wrong value {value}, can not parse as u8")),
+        }
+    }
+}
+#[derive(Deserialize)]
 pub struct LeaseForm {
-    days: StrU8,
-    hours: StrU8,
+    days: Days,
+    hours: Hours,
     #[serde(default)]
     hosts_ids: Vec<HostId>,
 }
@@ -142,7 +167,7 @@ pub async fn lease_hosts(
         .lease(
             &user.id().into(),
             &data.hosts_ids,
-            TimeDelta::hours((*data.hours + *data.days * 24) as i64),
+            TimeDelta::hours(*data.hours + *data.days * 24),
         )
         .await
         .unwrap();
@@ -158,7 +183,7 @@ pub async fn lease_random(
     service
         .lease_random(
             &user.id().into(),
-            TimeDelta::hours((*data.hours + *data.days * 24) as i64),
+            TimeDelta::hours(*data.hours + *data.days * 24),
         )
         .await
         .unwrap();
@@ -189,4 +214,47 @@ pub async fn release_all(
 ) -> impl IntoResponse {
     service.free_all(&user.id().into()).await.unwrap();
     Redirect::to("/hosts")
+}
+
+#[derive(Deserialize)]
+pub struct GetHostsQuery {
+    login: String,
+}
+
+pub async fn get_hosts_json(
+    State(hosts_service): State<HostsService>,
+    State(user_service): State<UsersService>,
+    OptionalQuery(query): OptionalQuery<GetHostsQuery>,
+) -> impl IntoResponse {
+    match query {
+        Some(GetHostsQuery { login }) => match user_service.get_user(&login).await.unwrap() {
+            None => Json(vec![]),
+            Some(user) => Json(
+                hosts_service
+                    .get_leased_hosts(&user.id)
+                    .await
+                    .unwrap()
+                    .into_iter()
+                    .map(|h| HostInfo {
+                        id: h.id,
+                        hostname: h.hostname,
+                        ip_address: h.ip_address.ip().to_string(),
+                    })
+                    .collect::<Vec<_>>(),
+            ),
+        },
+        None => Json(
+            hosts_service
+                .get_all_hosts()
+                .await
+                .unwrap()
+                .into_iter()
+                .map(|h| HostInfo {
+                    id: h.id,
+                    hostname: h.hostname,
+                    ip_address: h.ip_address.ip().to_string(),
+                })
+                .collect::<Vec<_>>(),
+        ),
+    }
 }
