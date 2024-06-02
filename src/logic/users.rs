@@ -30,4 +30,9 @@ impl UsersService {
             None => Ok(None),
         }
     }
+
+    pub async fn get_user(&self, login: &str) -> Result<Option<User>, UserError> {
+        let mut tx = self.registry.begin().await?;
+        tx.get_user(login).await.map_err(|e| e.into())
+    }
 }

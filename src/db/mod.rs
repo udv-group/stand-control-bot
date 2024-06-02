@@ -33,6 +33,12 @@ impl<'c> RegistryTx<'c> {
         self.tx.commit().await
     }
 
+    pub async fn get_all_hosts(&mut self) -> sqlx::Result<Vec<Host>> {
+        sqlx::query_as("SELECT * FROM hosts ORDER BY hosts.ip_address ASC")
+            .fetch_all(&mut *self.tx)
+            .await
+    }
+
     pub async fn get_available_hosts(&mut self) -> sqlx::Result<Vec<Host>> {
         sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL ORDER BY hosts.ip_address ASC")
             .fetch_all(&mut *self.tx)

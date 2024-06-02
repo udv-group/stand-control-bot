@@ -22,12 +22,9 @@ use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, SessionManager
 use tracing::info;
 use uuid::Uuid;
 
-use self::{
-    auth::{
-        login,
-        middleware::{auth_middleware, Backend},
-    },
-    hosts::{get_hosts, lease_hosts, lease_random, release_all, release_hosts},
+use self::auth::{
+    login,
+    middleware::{auth_middleware, Backend},
 };
 use crate::{
     configuration::Settings,
@@ -78,14 +75,15 @@ impl Application {
 
         let authed_router = Router::new()
             .route("/logout", get(login::logout))
-            .route("/hosts", get(get_hosts))
-            .route("/hosts/lease", post(lease_hosts))
-            .route("/hosts/lease/random", post(lease_random))
-            .route("/hosts/release", post(release_hosts))
-            .route("/hosts/release/all", post(release_all));
+            .route("/hosts", get(hosts::get_hosts))
+            .route("/hosts/lease", post(hosts::lease_hosts))
+            .route("/hosts/lease/random", post(hosts::lease_random))
+            .route("/hosts/release", post(hosts::release_hosts))
+            .route("/hosts/release/all", post(hosts::release_all));
 
         let app = Router::new()
             .route("/login", post(login::login).get(login::login_page))
+            .route("/hosts/leased", get(hosts::get_hosts_json))
             .merge(authed_router.route_layer(middleware::from_fn(auth_middleware)))
             .fallback(|| async { Redirect::to("/hosts").into_response() })
             .layer(auth_layer)

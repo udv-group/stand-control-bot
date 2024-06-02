@@ -27,6 +27,13 @@ impl HostsService {
         HostsService { registry }
     }
 
+    pub async fn get_all_hosts(&self) -> Result<Vec<Host>, HostError> {
+        let mut tx = self.registry.begin().await?;
+        let hosts = tx.get_all_hosts().await?;
+        tx.commit().await?;
+        Ok(hosts)
+    }
+
     pub async fn get_available_hosts(&self) -> Result<Vec<Host>, HostError> {
         let mut tx = self.registry.begin().await?;
         let hosts = tx.get_available_hosts().await?;

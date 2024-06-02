@@ -13,37 +13,39 @@
         <div class="col">
             <div class="table-responsive-sm">
                 <br>
-                <form hx-post="/hosts/lease" , hx-target="body">
+                <form id="host-form" hx-post="/hosts/lease" hx-target="body">
                     <fieldset>
                         <legend>Available hosts</legend>
                         <fieldset>
                             <legend>Select lease period</legend>
                             <label for="days">Days:</label>
-                            <input type="number" id="days" name="days" min="0" max="14" value="0">
+                            <input type="number" id="days" name="days" min="0" max="62" value="0">
                             <label for="days">Hours:</label>
-                            <input type="number" id="hours" name="hours" min="0" max="24" value="1">
+                            <input type="number" id="hours" name="hours" min="0" max="23" value="1">
                         </fieldset>
+                        <button type="submit">Lease selected</button>
+                        <button hx-validate="true" hx-post="/hosts/lease/random">Lease random</button>
+                        <br>
                         {% for host in hosts %}
                         <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
                         <label for="{{host.id}}"> {{host.ip_address}} ({{host.hostname}}) </label><br>
                         {% endfor %}
-                        <button type="submit">Lease selected</button>
-                        <button hx-post="/hosts/lease/random">Lease random</button>
                     </fieldset>
                 </form>
                 <br>
                 <form hx-post="/hosts/release" hx-target="body">
                     <fieldset>
                         <legend>Your leased hosts</legend>
+                        <button type="submit">Release selected</button>
+                        <button hx-post="/hosts/release/all" hx-include="" hx-confirm="Are you sure?">Release
+                            all</button>
+                        <br>
                         {% for host in leased %}
                         <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
                         <label for="{{host.id}}"> {{host.ip_address}} ({{host.hostname}}) (until expiration: <time
                                 datetime="{{host.leased_until}}"> {{host.valid_for}}</time>)
                         </label><br>
                         {% endfor %}
-                        <button type="submit">Release selected</button>
-                        <button hx-post="/hosts/release/all" hx-include="" hx-confirm="Are you sure?">Release
-                            all</button>
                     </fieldset>
                 </form>
             </div>
