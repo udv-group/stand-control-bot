@@ -29,7 +29,8 @@ pub struct AppSettings {
     pub host: IpAddr,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
-    pub base_url: String,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
+    pub lease_limit: usize,
     #[serde(deserialize_with = "deserialize_key_secret")]
     pub hmac_secret: Vec<u8>,
 }

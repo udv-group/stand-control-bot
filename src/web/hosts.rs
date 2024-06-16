@@ -1,9 +1,11 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect};
-use axum::{extract::State, response::Html};
-use axum::{Extension, Json};
-use axum_extra::extract::Form;
-use axum_extra::extract::OptionalQuery;
+use axum::{
+    extract::State,
+    response::{Html, IntoResponse, Json, Redirect},
+    Extension,
+};
+use axum_extra::extract::{Form, OptionalQuery};
+use axum_flash::{Flash, IncomingFlashes};
 use axum_login::AuthUser;
 use chrono::{DateTime, TimeDelta, Utc};
 use std::ops::Deref;
@@ -15,7 +17,7 @@ use crate::logic::hosts::HostsService;
 use crate::logic::users::UsersService;
 
 use super::auth::middleware::User;
-use super::AuthLink;
+use super::{flash_redirect, AuthLink};
 
 #[derive(Template, Debug)]
 #[template(path = "available_hosts.html", escape = "none")]
@@ -24,6 +26,7 @@ struct HostsPage {
     leased: Vec<LeaseInfo>,
     user: UserInfo,
     auth_link: String,
+    error: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -88,19 +91,21 @@ fn format_duration(duration: TimeDelta) -> String {
 pub async fn get_hosts(
     State(service): State<HostsService>,
     State(AuthLink(auth_link)): State<AuthLink>,
+    flashes: IncomingFlashes,
     Extension(user): Extension<User>,
-) -> Html<String> {
+) -> impl IntoResponse {
     let hosts = service.get_available_hosts().await.unwrap();
     let leased = service.get_leased_hosts(&user.id().into()).await.unwrap();
-
+    let error = flashes.into_iter().next().map(|(_, err)| err.to_owned());
     let page = HostsPage {
         user: user.into(),
         auth_link,
         hosts: hosts.into_iter().map(|h| h.into()).collect(),
         leased: leased.into_iter().map(|h| h.into()).collect(),
+        error,
     };
 
-    Html(page.render().unwrap())
+    (flashes, Html(page.render().unwrap()))
 }
 
 #[derive(Deserialize)]
@@ -160,35 +165,39 @@ pub struct LeaseForm {
 
 pub async fn lease_hosts(
     State(service): State<HostsService>,
+    flash: Flash,
     Extension(user): Extension<User>,
     Form(data): Form<LeaseForm>,
-) -> impl IntoResponse {
-    service
+) -> axum::response::Result<Redirect> {
+    let res = service
         .lease(
             &user.id().into(),
             &data.hosts_ids,
             TimeDelta::hours(*data.hours + *data.days * 24),
         )
-        .await
-        .unwrap();
-
-    Redirect::to("/hosts")
+        .await;
+    match res {
+        Ok(_) => Ok(Redirect::to("/hosts")),
+        Err(e) => Err(flash_redirect(&e.to_string(), "/hosts", flash)),
+    }
 }
 
 pub async fn lease_random(
     State(service): State<HostsService>,
+    flash: Flash,
     Extension(user): Extension<User>,
     Form(data): Form<LeaseForm>,
-) -> impl IntoResponse {
-    service
+) -> axum::response::Result<Redirect> {
+    let res = service
         .lease_random(
             &user.id().into(),
             TimeDelta::hours(*data.hours + *data.days * 24),
         )
-        .await
-        .unwrap();
-
-    Redirect::to("/hosts")
+        .await;
+    match res {
+        Ok(_) => Ok(Redirect::to("/hosts")),
+        Err(e) => Err(flash_redirect(&e.to_string(), "/hosts", flash)),
+    }
 }
 
 #[derive(Deserialize)]

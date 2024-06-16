@@ -15,16 +15,23 @@ pub enum HostError {
 
     #[error("Host is already leased")]
     AlreadyLeased(Vec<HostId>),
+
+    #[error("Hosts lease limit is reached")]
+    LeaseLimit,
 }
 
 #[derive(Clone)]
 pub struct HostsService {
     registry: Registry,
+    lease_limit: usize,
 }
 
 impl HostsService {
-    pub fn new(registry: Registry) -> Self {
-        HostsService { registry }
+    pub fn new(registry: Registry, lease_limit: usize) -> Self {
+        HostsService {
+            registry,
+            lease_limit,
+        }
     }
 
     pub async fn get_all_hosts(&self) -> Result<Vec<Host>, HostError> {
@@ -55,6 +62,9 @@ impl HostsService {
         lease_for: chrono::TimeDelta,
     ) -> Result<Vec<LeasedHost>, HostError> {
         let mut tx = self.registry.begin().await?;
+        if tx.get_leased_hosts(user_id).await?.len() >= self.lease_limit {
+            return Err(HostError::LeaseLimit);
+        };
         let available: HashSet<_> = tx
             .get_available_hosts()
             .await?
@@ -99,6 +109,9 @@ impl HostsService {
         lease_for: chrono::TimeDelta,
     ) -> Result<LeasedHost, HostError> {
         let mut tx = self.registry.begin().await?;
+        if tx.get_leased_hosts(user_id).await?.len() >= self.lease_limit {
+            return Err(HostError::LeaseLimit);
+        };
         let host = tx.get_first_available_host().await?;
         tx.lease_hosts(user_id, &[host.id], Utc::now() + lease_for)
             .await?;

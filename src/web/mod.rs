@@ -1,17 +1,17 @@
 mod auth;
 mod hosts;
 
-use askama_axum::IntoResponse;
 use axum::{
     body::Body,
     extract::{FromRef, MatchedPath},
     middleware,
-    response::Redirect,
+    response::{ErrorResponse, IntoResponse, Redirect},
     routing::{get, post},
     Router,
 };
 
 use axum_extra::extract::cookie::Key;
+use axum_flash::Flash;
 use axum_login::AuthManagerLayerBuilder;
 use hyper::Request;
 use std::net::SocketAddr;
@@ -89,7 +89,7 @@ impl Application {
             .layer(auth_layer)
             .layer(tracing_layer)
             .with_state(AppState {
-                service: HostsService::new(registry.clone()),
+                service: HostsService::new(registry.clone(), settings.app.lease_limit),
                 users_service: UsersService::new(registry),
                 flash_config: axum_flash::Config::new(Key::derive_from(&settings.app.hmac_secret)),
                 auth_link: AuthLink(auth_link),
@@ -122,4 +122,10 @@ impl Server {
     pub async fn serve(self) -> Result<(), std::io::Error> {
         axum::serve(self.listener, self.app).await
     }
+}
+
+pub fn flash_redirect(msg: &str, path: &str, flash: Flash) -> ErrorResponse {
+    (flash.error(msg), Redirect::to(path))
+        .into_response()
+        .into()
 }
