@@ -9,6 +9,9 @@
             <li><a href="/logout"><button>Logout</button></a></li>
         </menu>
     </div>
+    {% if let Some(error) = error %}
+    <p style="color:red;"><i>{{error}}</i></p>
+    {% endif %}
     <div class="row">
         <div class="col">
             <div class="table-responsive-sm">

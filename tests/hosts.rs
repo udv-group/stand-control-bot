@@ -3,7 +3,8 @@ pub mod support;
 use std::collections::HashSet;
 
 use chrono::{TimeDelta, Utc};
-use stand_control_bot::db::models::HostId;
+use stand_control_bot::{db::models::HostId, logic::hosts::HostError};
+use support::registry::create_service_with_limit;
 
 use crate::support::registry::{create_registry, create_service};
 
@@ -167,4 +168,36 @@ async fn leased_until_read() {
         .map(|h| h.id)
         .collect();
     assert_eq!(hosts_ids.to_vec(), vec![host.id]);
+}
+
+#[tokio::test]
+async fn lease_limit() {
+    let (mut get, service) = create_service_with_limit(2).await;
+    let host1 = get.generate_host().await;
+    let host2 = get.generate_host().await;
+    let host3 = get.generate_host().await;
+    let user = get.generate_user().await;
+
+    service
+        .lease(&user.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    match service
+        .lease(&user.id, &[host3.id], TimeDelta::seconds(42))
+        .await
+    {
+        Ok(_) => panic!("Didn't error on lease limit"),
+        Err(e) => match e {
+            HostError::LeaseLimit => (),
+            _ => panic!("Wrong error type on lease error"),
+        },
+    };
+    match service.lease_random(&user.id, TimeDelta::seconds(42)).await {
+        Ok(_) => panic!("Didn't error on lease limit"),
+        Err(e) => match e {
+            HostError::LeaseLimit => (),
+            _ => panic!("Wrong error type on lease error"),
+        },
+    };
 }

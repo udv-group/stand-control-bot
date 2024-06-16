@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    response::{ErrorResponse, Html, IntoResponse, Redirect, Response},
+    response::{Html, IntoResponse, Redirect, Response},
     Form,
 };
 use axum_flash::{Flash, IncomingFlashes};
@@ -8,7 +8,10 @@ use secrecy::Secret;
 use serde::Deserialize;
 use tracing::warn;
 
-use crate::web::auth::middleware::{AuthSession, Credentials};
+use crate::web::{
+    auth::middleware::{AuthSession, Credentials},
+    flash_redirect,
+};
 
 #[derive(Deserialize)]
 pub struct FormData {
@@ -57,12 +60,6 @@ pub async fn logout(mut session: AuthSession) -> axum::response::Result<Redirect
         .map_err(|_| "Unexpected error".to_string())?;
 
     Ok(Redirect::to("/login"))
-}
-
-pub fn flash_redirect(msg: &str, path: &str, flash: Flash) -> ErrorResponse {
-    (flash.error(msg), Redirect::to(path))
-        .into_response()
-        .into()
 }
 
 #[derive(Template)]
