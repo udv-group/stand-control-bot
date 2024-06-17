@@ -62,23 +62,27 @@ impl HostsService {
         lease_for: chrono::TimeDelta,
     ) -> Result<Vec<LeasedHost>, HostError> {
         let mut tx = self.registry.begin().await?;
-        if tx.get_leased_hosts(user_id).await?.len() >= self.lease_limit {
-            return Err(HostError::LeaseLimit);
-        };
-        let available: HashSet<_> = tx
-            .get_available_hosts()
+        let leased: HashSet<_> = tx
+            .get_leased_hosts(user_id)
             .await?
             .into_iter()
             .map(|h| h.id)
             .collect();
+
         let mut hosts_ids_set: HashSet<_> = HashSet::new();
         hosts_ids_set.extend(hosts_ids.to_vec());
 
-        if !available.is_superset(&hosts_ids_set) {
+        let intersection: HashSet<_> = leased.intersection(&hosts_ids_set).collect();
+        if !intersection.is_empty() {
             return Err(HostError::AlreadyLeased(
-                hosts_ids_set.difference(&available).cloned().collect(),
+                intersection.into_iter().cloned().collect(),
             ));
         }
+
+        if leased.len() + hosts_ids_set.len() > self.lease_limit {
+            return Err(HostError::LeaseLimit);
+        };
+
         tx.lease_hosts(user_id, hosts_ids, Utc::now() + lease_for)
             .await?;
 
