@@ -182,3 +182,9 @@ impl<'c> RegistryTx<'c> {
         Ok(rec.id.into())
     }
 }
+
+pub async fn run_migrations(settings: &DatabaseSettings) -> anyhow::Result<()> {
+    let pool = PgPool::connect_with(settings.with_db()).await?;
+    sqlx::migrate!("./migrations").run(&pool).await?;
+    Ok(())
+}

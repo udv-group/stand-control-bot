@@ -178,13 +178,13 @@ async fn lease_limit() {
     let host3 = get.generate_host().await;
     let user = get.generate_user().await;
 
-    service
-        .lease(&user.id, &[host1.id, host2.id], TimeDelta::seconds(42))
-        .await
-        .unwrap();
-
+    // lease too many at once
     match service
-        .lease(&user.id, &[host3.id], TimeDelta::seconds(42))
+        .lease(
+            &user.id,
+            &[host1.id, host2.id, host3.id],
+            TimeDelta::seconds(42),
+        )
         .await
     {
         Ok(_) => panic!("Didn't error on lease limit"),
@@ -193,6 +193,42 @@ async fn lease_limit() {
             _ => panic!("Wrong error type on lease error"),
         },
     };
+
+    service
+        .lease(&user.id, &[host1.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    // leasing 2 will go over the limit
+    match service
+        .lease(&user.id, &[host2.id, host3.id], TimeDelta::seconds(42))
+        .await
+    {
+        Ok(_) => panic!("Didn't error on lease limit"),
+        Err(e) => match e {
+            HostError::LeaseLimit => (),
+            _ => panic!("Wrong error type on lease error"),
+        },
+    };
+
+    // leasing 2, but one of them is already leased
+    match service
+        .lease(&user.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .await
+    {
+        Ok(_) => panic!("Didn't error on lease limit"),
+        Err(e) => match e {
+            HostError::AlreadyLeased(_) => (),
+            _ => panic!("Wrong error type on lease error"),
+        },
+    };
+
+    service
+        .lease(&user.id, &[host2.id], TimeDelta::seconds(42))
+        .await
+        .unwrap();
+
+    // leasing random when at limit
     match service.lease_random(&user.id, TimeDelta::seconds(42)).await {
         Ok(_) => panic!("Didn't error on lease limit"),
         Err(e) => match e {

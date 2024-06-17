@@ -2,7 +2,7 @@ use anyhow::Context;
 use stand_control_bot::{
     bot::{build_tg_bot, BotContext},
     configuration::get_config,
-    db::Registry,
+    db::{run_migrations, Registry},
     logic::{notifications::Notifier, release::hosts_release_timer, users::UsersService},
     set_env,
     web::Application,
@@ -22,6 +22,7 @@ async fn main() -> Result<(), anyhow::Error> {
     set_env();
 
     tracing::info!("Starting stand-control");
+    run_migrations(&settings.database).await?;
 
     let bot = Bot::from_env();
     let bot_username = bot
