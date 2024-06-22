@@ -1,120 +1,83 @@
 use std::error::Error;
 
+use anyhow::Context;
 use teloxide::{
-    dispatching::{
-        dialogue::{GetChatId, InMemStorage},
-        DpHandlerDescription, HandlerExt, UpdateFilterExt,
-    },
+    dispatching::{dialogue::InMemStorage, DpHandlerDescription, HandlerExt, UpdateFilterExt},
     dptree, filter_command,
     prelude::{DependencyMap, Handler},
-    types::{CallbackQuery, Message, Update},
+    requests::Requester,
+    types::{Message, Update},
     Bot,
 };
 
-use stated_dialogues::controller::handler::{handle_interaction, process_ctx_results};
-use stated_dialogues::controller::{teloxide::HandlerResult, DialCtxActions, DialInteraction};
-use std::sync::Arc;
+use crate::logic::users::UsersService;
 
-use super::{BotContext, BotState, Command};
+use super::{BotState, Command};
+
+pub type AnyResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
+pub type HandlerResult = AnyResult<()>;
 
 pub fn build_handler(
 ) -> Handler<'static, DependencyMap, Result<(), Box<dyn Error + Send + Sync>>, DpHandlerDescription>
 {
     let commands_handler = filter_command::<Command, _>()
-        .branch(dptree::case![Command::Reset].endpoint(handle_reset_command))
-        .endpoint(handle_command);
+        .branch(dptree::case![Command::Start].endpoint(handle_start_command));
 
-    let messages_hanler = Update::filter_message()
+    let messages_handler = Update::filter_message()
         .enter_dialogue::<Message, InMemStorage<BotState>, BotState>()
         .branch(commands_handler)
         .endpoint(main_state_handler);
 
-    let callbacks_hanlder = Update::filter_callback_query()
-        .enter_dialogue::<CallbackQuery, InMemStorage<BotState>, BotState>()
-        .endpoint(default_callback_handler);
-
-    dptree::entry()
-        .branch(messages_hanler)
-        .branch(callbacks_hanlder)
+    dptree::entry().branch(messages_handler)
 }
 
-async fn main_state_handler(msg: Message, context: Arc<BotContext>) -> HandlerResult {
+async fn main_state_handler(bot: Bot, msg: Message, users_service: UsersService) -> HandlerResult {
     tracing::debug!(
         "Handling message. chat_id={} from={:?}",
         msg.chat.id,
         msg.from().map(|f| f.id)
     );
 
-    let user_id = msg.from().unwrap().id;
-    handle_interaction(
-        &user_id.0,
-        &context.bot_adapter,
-        &context.dial,
-        DialInteraction::Message(msg.into()),
-    )
-    .await
+    let user_id = msg
+        .from()
+        .map(|m_from| m_from.id)
+        .with_context(|| "Message without user_id")?;
+    let link = msg
+        .text()
+        .unwrap_or("")
+        .trim_matches(|c| c == ' ' || c == '"');
+
+    match users_service
+        .link_user(link, user_id.0.to_string().as_ref())
+        .await
+        .with_context(|| "Failed user link")?
+    {
+        Some(user) => {
+            bot.send_message(
+                msg.chat.id,
+                format!("Telegram successfully linked for user '{}'", user.login),
+            )
+            .await?;
+        }
+        None => {
+            bot.send_message(msg.chat.id, "User for this link code not found")
+                .await?;
+        }
+    };
+    bot.delete_message(msg.chat.id, msg.id).await?;
+
+    Ok(())
 }
 
-async fn default_callback_handler(
-    _bot: Bot,
-    query: CallbackQuery,
-    context: Arc<BotContext>,
-) -> HandlerResult {
-    tracing::debug!(
-        "Callback: called, chat_id: {:?}; from: {:?}",
-        query.chat_id(),
-        query.from.id
-    );
-
-    let user_id = query.from.id;
-    tracing::debug!("Callback ({user_id}): Handling \"{:?}\"", query.data);
-    handle_interaction(
-        &user_id.0,
-        &context.bot_adapter,
-        &context.dial,
-        DialInteraction::Select(query.into()),
-    )
-    .await
-}
-
-async fn handle_reset_command(msg: Message, context: Arc<BotContext>) -> HandlerResult {
-    tracing::debug!(
-        "Handling reset command. chat_id={} from={:?}",
-        msg.chat.id,
-        msg.from().map(|f| f.id)
-    );
-    let user_id = msg.from().unwrap().id;
-    if let Some(old_controller) = context.dial.write().await.take_controller(&user_id.0) {
-        process_ctx_results(
-            user_id.0,
-            old_controller.shutdown().await?,
-            &context.bot_adapter,
-        )
-        .await?;
-    }
-
-    handle_interaction(
-        &user_id.0,
-        &context.bot_adapter,
-        &context.dial,
-        DialInteraction::Command(msg.clone().into()),
-    )
-    .await
-}
-
-async fn handle_command(msg: Message, context: Arc<BotContext>) -> HandlerResult {
+async fn handle_start_command(bot: Bot, msg: Message) -> HandlerResult {
     tracing::debug!(
         "Handling {:?} command. chat_id={} from={:?}",
         msg.text(),
         msg.chat.id,
         msg.from().map(|f| f.id)
     );
-    let user_id = msg.from().unwrap().id;
-    handle_interaction(
-        &user_id.0,
-        &context.bot_adapter,
-        &context.dial,
-        DialInteraction::Command(msg.clone().into()),
-    )
-    .await
+    bot.send_message(msg.chat.id, "Hello, send your link code")
+        .await?;
+
+    Ok(())
 }

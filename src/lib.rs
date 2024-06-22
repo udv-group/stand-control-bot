@@ -3,7 +3,6 @@ use std::path::Path;
 pub mod bot;
 pub mod configuration;
 pub mod db;
-pub mod dialogues;
 pub mod logic;
 pub mod telemetry;
 pub mod web;

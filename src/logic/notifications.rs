@@ -1,5 +1,6 @@
+use std::future::Future;
+
 use anyhow::{Context, Ok, Result};
-use stated_dialogues::controller::BotAdapter;
 
 use crate::db::{
     models::{HostId, UserId},
@@ -9,6 +10,10 @@ use crate::db::{
 #[derive(Debug)]
 pub enum Notification {
     HostsReleased((Vec<HostId>, UserId)),
+}
+
+pub trait BotAdapter {
+    fn send_message(&self, user_id: i64, msg: String) -> impl Future<Output = Result<()>> + Send;
 }
 
 pub struct Notifier<T: BotAdapter> {
@@ -58,8 +63,14 @@ where
                         host.ip_address.ip()
                     )
                 }));
+
                 self.tg_adapter
-                    .send_message(tg_handle.parse()?, msg.into())
+                    .send_message(
+                        tg_handle
+                            .parse()
+                            .with_context(|| format!("Failed parse chat_id from {}", tg_handle))?,
+                        msg,
+                    )
                     .await?;
             }
         };

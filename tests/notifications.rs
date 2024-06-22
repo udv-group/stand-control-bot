@@ -4,43 +4,21 @@ use std::sync::Arc;
 
 use crate::support::registry::create_registry;
 use async_cell::sync::AsyncCell;
-use stand_control_bot::logic::notifications::{Notification, Notifier};
+use stand_control_bot::logic::notifications::{BotAdapter, Notification, Notifier};
 
 use anyhow::{Context, Result};
-use stated_dialogues::{controller::BotAdapter, dialogues::MessageId};
 
 struct TestAdapter {
     pub sent: Arc<AsyncCell<Vec<String>>>,
 }
 
 impl BotAdapter for TestAdapter {
-    async fn send_message(
-        &self,
-        user_id: u64,
-        _msg: stated_dialogues::dialogues::OutgoingMessage,
-    ) -> Result<stated_dialogues::dialogues::MessageId> {
+    async fn send_message(&self, user_id: i64, _msg: String) -> Result<()> {
         let mut sent = self.sent.take().await;
         sent.push(user_id.to_string());
 
         self.sent.set(sent);
-        Ok(MessageId(1))
-    }
-
-    async fn send_keyboard(
-        &self,
-        _user_id: u64,
-        _msg: stated_dialogues::dialogues::OutgoingMessage,
-        _selector: Vec<Vec<(stated_dialogues::dialogues::ButtonPayload, String)>>,
-    ) -> Result<stated_dialogues::dialogues::MessageId> {
-        unreachable!()
-    }
-
-    async fn delete_messages(
-        &self,
-        _user_id: u64,
-        _messages_ids: Vec<stated_dialogues::dialogues::MessageId>,
-    ) -> Result<()> {
-        unreachable!()
+        Ok(())
     }
 }
 
