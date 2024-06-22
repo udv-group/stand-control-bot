@@ -1,7 +1,7 @@
 use std::{collections::HashMap, time::Duration};
 
 use chrono::Utc;
-use stated_dialogues::controller::BotAdapter;
+
 use tokio::time::sleep;
 
 use crate::db::{
@@ -10,7 +10,7 @@ use crate::db::{
 };
 use anyhow::Result;
 
-use super::notifications::{Notification, Notifier};
+use super::notifications::{BotAdapter, Notification, Notifier};
 use tracing::error;
 
 pub async fn hosts_release_timer<T: BotAdapter>(registry: Registry, notifier: Notifier<T>) {

@@ -1,19 +1,39 @@
 use anyhow::Context;
 use stand_control_bot::{
-    bot::{build_tg_bot, BotContext},
+    bot::build_tg_bot,
     configuration::get_config,
     db::{run_migrations, Registry},
-    logic::{notifications::Notifier, release::hosts_release_timer, users::UsersService},
+    logic::{
+        notifications::{BotAdapter, Notifier},
+        release::hosts_release_timer,
+        users::UsersService,
+    },
     set_env,
     web::Application,
 };
 
-use stated_dialogues::controller::{teloxide::TeloxideAdapter, ttl::track_dialog_ttl};
-use teloxide::{requests::Requester, Bot};
+use teloxide::{requests::Requester, types::ChatId, Bot};
 use tokio::select;
 use tracing::info;
 
 use stand_control_bot::telemetry::init_tracing;
+
+struct TgBotAdapter {
+    bot: Bot,
+}
+
+impl TgBotAdapter {
+    fn new(bot: Bot) -> Self {
+        TgBotAdapter { bot }
+    }
+}
+
+impl BotAdapter for TgBotAdapter {
+    async fn send_message(&self, user_id: i64, msg: String) -> anyhow::Result<()> {
+        self.bot.send_message(ChatId(user_id), msg).await?;
+        Ok(())
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -32,18 +52,10 @@ async fn main() -> Result<(), anyhow::Error> {
         .username
         .with_context(|| "Bot hasn't username?!")?;
     let registry = Registry::new(&settings.database).await?;
-    let notifier = Notifier::new(registry.clone(), TeloxideAdapter::new(bot.clone()));
+    let notifier = Notifier::new(registry.clone(), TgBotAdapter::new(bot.clone()));
     let server = Application::build(&settings, format!("https://t.me/{bot_username}")).await?;
 
-    let bot_context = BotContext::new(bot.clone(), UsersService::new(registry.clone()));
-    let dialogs_ttl_track = track_dialog_ttl(
-        bot_context.dial.clone(),
-        bot_context.bot_adapter.clone(),
-        10,
-        None,
-    );
-
-    let mut dispatcher = build_tg_bot(bot, bot_context);
+    let mut dispatcher = build_tg_bot(bot, UsersService::new(registry.clone()));
 
     select! {
         _ = server.serve_forever() => {
@@ -54,9 +66,6 @@ async fn main() -> Result<(), anyhow::Error> {
         }
         _ = dispatcher.dispatch() => {
             info!("Bot exited")
-        }
-        _ = dialogs_ttl_track => {
-            info!("Dialogs ttl tracking exited")
         }
     };
     info!("stand-control shut down");
