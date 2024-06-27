@@ -24,6 +24,7 @@ pub struct LdapSettings {
     pub use_tls: bool,
     pub no_tls_verify: bool,
 }
+
 #[derive(Deserialize, Clone)]
 pub struct AppSettings {
     pub host: IpAddr,
@@ -109,7 +110,7 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     let config_dir: PathBuf = std::env::var("CONFIG_DIR")
         .unwrap_or_else(|_| match environment {
             Environment::Local => "configuration".into(),
-            Environment::Production => "/etc/stand-controll-bot".into(),
+            Environment::Production => "/etc/stand-control-bot".into(),
         })
         .into();
     config::Config::builder()
