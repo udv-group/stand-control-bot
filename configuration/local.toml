@@ -2,8 +2,10 @@
 host = "127.0.0.1"
 base_url = "http://127.0.0.1"
 hmac_secret = "this-is-a-very-long-secret-string!"
+
 [database]
 require_ssl = false
+
 [ldap]
 url = "ldap://localhost:2389"
 use_tls = false

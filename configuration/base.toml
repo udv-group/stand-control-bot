@@ -1,6 +1,9 @@
 [app]
 port = 8080
-lease_limit = 10 
+host = "127.0.0.1"
+hmac_secret = "this-is-a-very-long-secret-string!"
+lease_limit = 10
+
 [database]
 host = "127.0.0.1"
 port = 5432
@@ -8,3 +11,8 @@ username = "postgres"
 password = "password"
 database_name = "stand_control_bot"
 require_ssl = false
+
+[ldap]
+url = "ldap://your-ldap.addr"
+use_tls = false
+no_tls_verify = true
