@@ -36,7 +36,7 @@ Configuration presidence is as follows: `env` > `production.toml`/`local.toml` >
 
 Prerequisites:
 - Up to date Rust compiler ([rustup](https://www.rust-lang.org/tools/install) is strongly recommended)
-- Postgres 
+- Postgres (>=13)
 - [sqlx-cli](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md)
 - LDAP server
 
