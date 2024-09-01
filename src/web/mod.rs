@@ -29,12 +29,13 @@ use self::auth::{
 use crate::{
     configuration::Settings,
     db::Registry,
-    logic::{hosts::HostsService, users::UsersService},
+    logic::{groups::GroupsService, hosts::HostsService, users::UsersService},
 };
 
 #[derive(FromRef, Clone)]
 struct AppState {
-    service: HostsService,
+    hosts_service: HostsService,
+    groups_service: GroupsService,
     users_service: UsersService,
     flash_config: axum_flash::Config,
     auth_link: AuthLink,
@@ -89,7 +90,8 @@ impl Application {
             .layer(auth_layer)
             .layer(tracing_layer)
             .with_state(AppState {
-                service: HostsService::new(registry.clone(), settings.app.lease_limit),
+                hosts_service: HostsService::new(registry.clone(), settings.app.lease_limit),
+                groups_service: GroupsService::new(registry.clone()),
                 users_service: UsersService::new(registry),
                 flash_config: axum_flash::Config::new(Key::derive_from(&settings.app.hmac_secret)),
                 auth_link: AuthLink(auth_link),

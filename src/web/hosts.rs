@@ -1,10 +1,10 @@
 use askama::Template;
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{Html, IntoResponse, Json, Redirect},
     Extension,
 };
-use axum_extra::extract::{Form, OptionalQuery};
+use axum_extra::extract::{CookieJar, Form, OptionalQuery};
 use axum_flash::{Flash, IncomingFlashes};
 use axum_login::AuthUser;
 use chrono::{DateTime, TimeDelta, Utc};
@@ -12,16 +12,22 @@ use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
 
-use crate::db::models::{Host, HostId, LeasedHost};
 use crate::logic::hosts::HostsService;
 use crate::logic::users::UsersService;
+use crate::{
+    db::models::{Group, GroupId, Host, HostId, LeasedHost},
+    logic::groups::GroupsService,
+};
 
 use super::auth::middleware::User;
 use super::{flash_redirect, AuthLink};
+use axum_extra::extract::cookie::Cookie;
 
 #[derive(Template, Debug)]
 #[template(path = "available_hosts.html", escape = "none")]
 struct HostsPage {
+    groups: Vec<GroupInfo>,
+    selected_group: GroupInfo,
     hosts: Vec<HostInfo>,
     leased: Vec<LeaseInfo>,
     user: UserInfo,
@@ -41,6 +47,20 @@ impl From<User> for UserInfo {
             login: value.username,
             tg_linked: value.tg_handle.is_some(),
             link: value.link,
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct GroupInfo {
+    id: GroupId,
+    name: String,
+}
+impl From<Group> for GroupInfo {
+    fn from(value: Group) -> Self {
+        Self {
+            id: value.id,
+            name: value.name,
         }
     }
 }
@@ -88,16 +108,47 @@ fn format_duration(duration: TimeDelta) -> String {
     format!("{days} days, {hours} hours, {minutes} minutes")
 }
 
+#[derive(Deserialize)]
+pub struct HostsParams {
+    pub group_id: Option<GroupId>,
+}
+
 pub async fn get_hosts(
-    State(service): State<HostsService>,
+    params: Query<HostsParams>,
+    State(hosts_service): State<HostsService>,
+    State(groups_service): State<GroupsService>,
     State(AuthLink(auth_link)): State<AuthLink>,
     flashes: IncomingFlashes,
     Extension(user): Extension<User>,
+    jar: CookieJar,
 ) -> impl IntoResponse {
-    let hosts = service.get_available_hosts().await.unwrap();
-    let leased = service.get_leased_hosts(&user.id().into()).await.unwrap();
+    let groups = groups_service.get_all_groups().await.unwrap();
+    let group_id = params.group_id.unwrap_or_else(|| {
+        jar.get("group_id").map_or_else(
+            || groups[0].id,
+            |cookie| cookie.value().parse::<GroupId>().unwrap_or(groups[0].id),
+        )
+    });
+
+    let selected_group = groups
+        .iter()
+        .find(|group| group.id == group_id)
+        .unwrap_or(&groups[0])
+        .clone();
+    let hosts = hosts_service
+        .get_available_group_hosts(&selected_group.id)
+        .await
+        .unwrap();
+
+    let leased = hosts_service
+        .get_leased_hosts(&user.id().into())
+        .await
+        .unwrap();
+
     let error = flashes.into_iter().next().map(|(_, err)| err.to_owned());
     let page = HostsPage {
+        groups: groups.into_iter().map(|g| g.into()).collect(),
+        selected_group: selected_group.into(),
         user: user.into(),
         auth_link,
         hosts: hosts.into_iter().map(|h| h.into()).collect(),
@@ -105,7 +156,11 @@ pub async fn get_hosts(
         error,
     };
 
-    (flashes, Html(page.render().unwrap()))
+    (
+        jar.add(Cookie::new("group_id", group_id.to_string())),
+        flashes,
+        Html(page.render().unwrap()),
+    )
 }
 
 #[derive(Deserialize)]

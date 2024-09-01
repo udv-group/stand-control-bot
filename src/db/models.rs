@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Deref};
+use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use chrono::prelude::*;
 use ipnetwork::IpNetwork;
@@ -54,6 +54,38 @@ impl From<i32> for HostId {
     }
 }
 
+#[derive(sqlx::Type, Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[sqlx(transparent)]
+pub struct GroupId(pub i32);
+impl Display for GroupId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+impl FromStr for GroupId {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.parse::<i32>() {
+            Ok(v) => Ok(Self(v)),
+            Err(_) => Err(format!("Wrong value {s}, can not parse to as i32")),
+        }
+    }
+}
+
+impl Deref for GroupId {
+    type Target = i32;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<i32> for GroupId {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, FromRow)]
 pub struct LeasedHost {
     #[sqlx(rename = "hid")]
@@ -72,6 +104,13 @@ pub struct Host {
     pub ip_address: IpNetwork,
     pub leased_until: Option<DateTime<Utc>>,
     pub user_id: Option<UserId>,
+    pub group_id: GroupId,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, FromRow)]
+pub struct Group {
+    pub id: GroupId,
+    pub name: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, FromRow)]

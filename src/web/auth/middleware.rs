@@ -96,8 +96,8 @@ impl AuthnBackend for Backend {
             .and_then(|r| r.success());
         ldap.unbind().await?;
 
-        if resp.is_err() {
-            info!("Authentication failed for {}", username);
+        if let Err(err) = resp {
+            info!("Authentication failed for '{}': '{}'", username, err);
             return Ok(None);
         }
         let user = self.registry.begin().await?.get_user(&username).await?;
@@ -133,8 +133,8 @@ pub async fn auth_middleware(
 ) -> Response {
     if let Some(user) = auth_session.user {
         let span = tracing::Span::current();
-        span.record("username", &tracing::field::display(&user.username));
-        span.record("user_id", &tracing::field::display(&user.id));
+        span.record("username", tracing::field::display(&user.username));
+        span.record("user_id", tracing::field::display(&user.id));
         request.extensions_mut().insert(user);
         next.run(request).await
     } else {
