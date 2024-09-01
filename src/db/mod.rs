@@ -3,6 +3,7 @@ pub mod models;
 use std::ops::Deref;
 
 use chrono::prelude::*;
+use models::{Group, GroupId};
 use sqlx::{PgPool, Postgres, Transaction};
 
 use crate::configuration::DatabaseSettings;
@@ -39,6 +40,16 @@ impl<'c> RegistryTx<'c> {
             .await
     }
 
+    pub async fn get_available_group_hosts(
+        &mut self,
+        group_id: &GroupId,
+    ) -> sqlx::Result<Vec<Host>> {
+        sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL AND group_id = $1 ORDER BY hosts.ip_address ASC")
+            .bind(group_id)
+            .fetch_all(&mut *self.tx)
+            .await
+    }
+
     pub async fn get_available_hosts(&mut self) -> sqlx::Result<Vec<Host>> {
         sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL ORDER BY hosts.ip_address ASC")
             .fetch_all(&mut *self.tx)
@@ -64,7 +75,7 @@ impl<'c> RegistryTx<'c> {
     pub async fn get_leased_hosts(&mut self, user_id: &UserId) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email, users.link 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, hosts.group_id, users.id, users.login, users.tg_handle, users.email, users.link 
             FROM hosts JOIN users on hosts.user_id = users.id 
             WHERE hosts.user_id = $1 ORDER BY hosts.leased_until, hosts.ip_address ASC
             "#,
@@ -78,7 +89,7 @@ impl<'c> RegistryTx<'c> {
     ) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, users.id, users.login, users.tg_handle, users.email, users.link  
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, hosts.group_id, users.id, users.login, users.tg_handle, users.email, users.link  
             FROM hosts JOIN users on hosts.user_id = users.id
             WHERE hosts.leased_until < $1
             "#,
@@ -180,6 +191,12 @@ impl<'c> RegistryTx<'c> {
         .fetch_one(&mut *self.tx)
         .await?;
         Ok(rec.id.into())
+    }
+
+    pub async fn get_groups(&mut self) -> sqlx::Result<Vec<Group>> {
+        sqlx::query_as("SELECT * FROM groups ORDER BY name ASC")
+            .fetch_all(&mut *self.tx)
+            .await
     }
 }
 

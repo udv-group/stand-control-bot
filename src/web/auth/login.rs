@@ -32,7 +32,7 @@ pub async fn login(
         username: form.username,
         password: form.password,
     };
-    tracing::Span::current().record("username", &tracing::field::display(&credentials.username));
+    tracing::Span::current().record("username", tracing::field::display(&credentials.username));
 
     let user = match session.authenticate(credentials).await {
         Ok(Some(user)) => user,

@@ -4,7 +4,7 @@ use chrono::Utc;
 use thiserror::Error;
 
 use crate::db::{
-    models::{Host, HostId, LeasedHost, UserId},
+    models::{GroupId, Host, HostId, LeasedHost, UserId},
     Registry,
 };
 
@@ -37,6 +37,17 @@ impl HostsService {
     pub async fn get_all_hosts(&self) -> Result<Vec<Host>, HostError> {
         let mut tx = self.registry.begin().await?;
         let hosts = tx.get_all_hosts().await?;
+        tx.commit().await?;
+        Ok(hosts)
+    }
+
+    pub async fn get_available_group_hosts(
+        &self,
+        group_id: &GroupId,
+    ) -> Result<Vec<Host>, HostError> {
+        let mut tx = self.registry.begin().await?;
+        let hosts = tx.get_available_group_hosts(group_id).await?;
+
         tx.commit().await?;
         Ok(hosts)
     }

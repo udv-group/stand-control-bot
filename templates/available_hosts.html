@@ -5,8 +5,12 @@
 <div class="container">
     <div class="row">
         <menu>
-            <li><button id="dialog-open">Account</button></li>
+            <li><button id="account-dialog-open">Account</button></li>
             <li><a href="/logout"><button>Logout</button></a></li>
+        </menu>
+        <menu>
+            <li>Selected group "{{ selected_group.name }}"</li>
+            <li><button id="groups-dialog-open">View all groups</button></a></li>
         </menu>
     </div>
     {% if let Some(error) = error %}
@@ -55,7 +59,7 @@
         </div>
     </div>
 </div>
-<dialog>
+<dialog id="account-dialog">
     <fieldset>
         <legend>Account</legend>
         <p> Login: {{user.login}} </p>
@@ -63,19 +67,39 @@
         <p>To link your account send code "{{user.link}}" to the <a href="{{auth_link}}"
                 target="_blank">{{auth_link}}</a></p>
         <br>
-        <button id="dialog-close" autofocus>Close</button>
+        <button id="account-dialog-close" autofocus>Close</button>
+</dialog>
+<dialog id="groups-dialog">
+    <fieldset>
+        <legend>Groups</legend>
+        
+        <table>
+            {% for group in groups %}
+            <tr>
+                <th>{{ group.name }}</th>
+                <th><button onclick="location.href='/hosts?group_id={{group.id}}'" type="button">Select</button></th>
+            </tr>
+            {% endfor %}
+        </table>
+        <button id="groups-dialog-close" autofocus>Close</button>
 </dialog>
 <script>
-    const dialog = document.querySelector("dialog");
-    const showButton = document.getElementById("dialog-open");
-    const closeButton = document.getElementById("dialog-close");
-
-    showButton.addEventListener("click", () => {
-        dialog.showModal();
+    const accountDialog = document.getElementById("account-dialog");
+    document.getElementById("account-dialog-open").addEventListener("click", () => {
+        accountDialog.showModal();
     });
 
-    closeButton.addEventListener("click", () => {
-        dialog.close();
+    document.getElementById("account-dialog-close").addEventListener("click", () => {
+        accountDialog.close();
+    });
+
+    const groupsDialog = document.getElementById("groups-dialog");
+    document.getElementById("groups-dialog-open").addEventListener("click", () => {
+        groupsDialog.showModal();
+    });
+
+    document.getElementById("groups-dialog-close").addEventListener("click", () => {
+        groupsDialog.close();
     });
 </script>
 <style>
@@ -85,6 +109,10 @@
         padding: 0;
         margin-bottom: 0;
         gap: 1em;
+    }
+    td, th {
+        text-align: left;
+        padding: 8px;
     }
 </style>
 {% endblock content %}
