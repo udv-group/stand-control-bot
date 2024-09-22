@@ -198,6 +198,11 @@ impl<'c> RegistryTx<'c> {
             .fetch_all(&mut *self.tx)
             .await
     }
+    pub async fn get_all_users(&mut self) -> sqlx::Result<Vec<User>> {
+        sqlx::query_as("SELECT * from users")
+            .fetch_all(&mut *self.tx)
+            .await
+    }
 }
 
 pub async fn run_migrations(settings: &DatabaseSettings) -> anyhow::Result<()> {

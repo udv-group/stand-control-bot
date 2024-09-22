@@ -7,107 +7,24 @@ use axum::{
 use axum_extra::extract::{CookieJar, Form, OptionalQuery};
 use axum_flash::{Flash, IncomingFlashes};
 use axum_login::AuthUser;
-use chrono::{DateTime, TimeDelta, Utc};
-use std::ops::Deref;
+use chrono::{TimeDelta, Utc};
+use std::{collections::HashMap, ops::Deref};
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-use crate::logic::hosts::HostsService;
+use super::templates::{
+    format_duration, AllHostsPage, HostInfo, HostsLeasePage, HostsPage, LeaseInfo,
+};
 use crate::logic::users::UsersService;
+use crate::{db::models::UserId, logic::hosts::HostsService};
 use crate::{
-    db::models::{Group, GroupId, Host, HostId, LeasedHost},
+    db::models::{GroupId, HostId},
     logic::groups::GroupsService,
 };
 
 use super::auth::middleware::User;
 use super::{flash_redirect, AuthLink};
 use axum_extra::extract::cookie::Cookie;
-
-#[derive(Template, Debug)]
-#[template(path = "available_hosts.html", escape = "none")]
-struct HostsPage {
-    groups: Vec<GroupInfo>,
-    selected_group: GroupInfo,
-    hosts: Vec<HostInfo>,
-    leased: Vec<LeaseInfo>,
-    user: UserInfo,
-    auth_link: String,
-    error: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct UserInfo {
-    login: String,
-    tg_linked: bool,
-    link: String,
-}
-impl From<User> for UserInfo {
-    fn from(value: User) -> Self {
-        Self {
-            login: value.username,
-            tg_linked: value.tg_handle.is_some(),
-            link: value.link,
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct GroupInfo {
-    id: GroupId,
-    name: String,
-}
-impl From<Group> for GroupInfo {
-    fn from(value: Group) -> Self {
-        Self {
-            id: value.id,
-            name: value.name,
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct HostInfo {
-    id: HostId,
-    hostname: String,
-    ip_address: String,
-}
-impl From<Host> for HostInfo {
-    fn from(value: Host) -> Self {
-        Self {
-            id: value.id,
-            hostname: value.hostname,
-            ip_address: value.ip_address.ip().to_string(),
-        }
-    }
-}
-#[derive(Deserialize, Debug)]
-struct LeaseInfo {
-    id: HostId,
-    hostname: String,
-    ip_address: String,
-    leased_until: DateTime<Utc>,
-    valid_for: String,
-}
-
-impl From<LeasedHost> for LeaseInfo {
-    fn from(value: LeasedHost) -> Self {
-        Self {
-            id: value.id,
-            hostname: value.hostname,
-            ip_address: value.ip_address.ip().to_string(),
-            leased_until: value.leased_until,
-            valid_for: format_duration(value.leased_until - Utc::now()),
-        }
-    }
-}
-
-fn format_duration(duration: TimeDelta) -> String {
-    let days = duration.num_days();
-    let hours = (duration - TimeDelta::days(days)).num_hours();
-    let minutes = (duration - TimeDelta::days(days) - TimeDelta::hours(hours)).num_minutes();
-    format!("{days} days, {hours} hours, {minutes} minutes")
-}
-
 #[derive(Deserialize)]
 pub struct HostsParams {
     pub group_id: Option<GroupId>,
@@ -146,14 +63,17 @@ pub async fn get_hosts(
         .unwrap();
 
     let error = flashes.into_iter().next().map(|(_, err)| err.to_owned());
-    let page = HostsPage {
+    let lease_page = HostsLeasePage {
         groups: groups.into_iter().map(|g| g.into()).collect(),
         selected_group: selected_group.into(),
-        user: user.into(),
-        auth_link,
         hosts: hosts.into_iter().map(|h| h.into()).collect(),
         leased: leased.into_iter().map(|h| h.into()).collect(),
         error,
+    };
+    let page = HostsPage {
+        user: user.into(),
+        auth_link,
+        page: lease_page,
     };
 
     (
@@ -161,6 +81,48 @@ pub async fn get_hosts(
         flashes,
         Html(page.render().unwrap()),
     )
+}
+pub async fn get_all_hosts(
+    State(hosts_service): State<HostsService>,
+    State(user_service): State<UsersService>,
+    State(AuthLink(auth_link)): State<AuthLink>,
+    Extension(user): Extension<User>,
+) -> impl IntoResponse {
+    let users: HashMap<UserId, String> = user_service
+        .get_all_users()
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|u| (u.id, u.login))
+        .collect();
+    let hosts = hosts_service.get_all_hosts().await.unwrap();
+
+    let lease_page = AllHostsPage {
+        hosts: hosts
+            .into_iter()
+            .map(|h| LeaseInfo {
+                id: h.id,
+                hostname: h.hostname,
+                ip_address: h.ip_address.ip().to_string(),
+                leased_until: h.leased_until.unwrap_or_default(),
+                leased_by: h
+                    .user_id
+                    .and_then(|id| users.get(&id).cloned())
+                    .unwrap_or("free".to_string()),
+                valid_for: h
+                    .leased_until
+                    .map(|v| format_duration(v - Utc::now()))
+                    .unwrap_or("free".to_string()),
+            })
+            .collect(),
+    };
+    let page = HostsPage {
+        user: user.into(),
+        auth_link,
+        page: lease_page,
+    };
+
+    Html(page.render().unwrap())
 }
 
 #[derive(Deserialize)]

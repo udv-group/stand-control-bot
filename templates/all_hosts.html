@@ -1,0 +1,22 @@
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <div class="table-responsive-sm">
+                <form id="host-form">
+                    <fieldset>
+                        <legend>All hosts</legend>
+                        {% for host in hosts %}
+                        <input type="hidden" id="{{host.id}}">
+                        <label for="{{host.id}}">
+                            <a href="http://{{ host.ip_address }}" target="_blank">
+                                {{host.ip_address}}
+                            </a> ({{host.hostname}}) ({{host.leased_by}})
+                        </label>
+                        <br>
+                        {% endfor %}
+                    </fieldset>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
