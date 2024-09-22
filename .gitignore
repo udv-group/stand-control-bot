@@ -1,5 +1,6 @@
 /target
 Cargo.lock
-.env
-/scripts/ldap/config
-/scripts/ldap/db
+.*
+!.gitignore
+!.sqlx
+!.github

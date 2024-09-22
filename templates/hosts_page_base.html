@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+    <div class="topnav">
+        <a class="active" href="/hosts">Lease hosts</a>
+        <a href="/hosts/all">All hosts</a>
+        <a id="account-dialog-open">Account</a>
+        <a href="/logout">Logout</a>
+    </div>
+    {{page}}
+</div>
+<dialog id="account-dialog">
+    <fieldset>
+        <legend>Account</legend>
+        <p> Login: {{user.login}} </p>
+        <p> Telegram linked: {{user.tg_linked}} </p>
+        <p>To link your account send code "{{user.link}}" to the <a href="{{auth_link}}"
+                target="_blank">{{auth_link}}</a></p>
+        <br>
+        <button id="account-dialog-close" autofocus>Close</button>
+</dialog>
+<script>
+    const accountDialog = document.getElementById("account-dialog");
+    document.getElementById("account-dialog-open").addEventListener("click", () => {
+        accountDialog.showModal();
+    });
+
+    document.getElementById("account-dialog-close").addEventListener("click", () => {
+        accountDialog.close();
+    });
+</script>
+<style>
+    .topnav {
+        overflow: hidden;
+        background-color: #333;
+    }
+
+    .topnav a {
+        float: left;
+        color: #f2f2f2;
+        text-align: center;
+        padding: 14px 16px;
+        text-decoration: none;
+        font-size: 17px;
+    }
+
+    .topnav a:hover {
+        background-color: #ddd;
+        color: black;
+    }
+
+    td,
+    th {
+        text-align: left;
+        padding: 8px;
+    }
+</style>
+{% endblock content %}

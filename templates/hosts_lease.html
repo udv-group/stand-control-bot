@@ -1,13 +1,5 @@
-{% extends "base.html" %}
-
-{% block content %}
-
 <div class="container">
     <div class="row">
-        <menu>
-            <li><button id="account-dialog-open">Account</button></li>
-            <li><a href="/logout"><button>Logout</button></a></li>
-        </menu>
         <menu>
             <li>Selected group "{{ selected_group.name }}"</li>
             <li><button id="groups-dialog-open">View all groups</button></a></li>
@@ -35,7 +27,8 @@
                         <br>
                         {% for host in hosts %}
                         <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
-                        <label for="{{host.id}}"> <a href="http://{{ host.ip_address }}" target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) </label><br>
+                        <label for="{{host.id}}"> <a href="http://{{ host.ip_address }}"
+                                target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) </label><br>
                         {% endfor %}
                     </fieldset>
                 </form>
@@ -49,7 +42,8 @@
                         <br>
                         {% for host in leased %}
                         <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
-                        <label for="{{host.id}}"> <a href="http://{{ host.ip_address }}" target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) (until expiration: <time
+                        <label for="{{host.id}}"> <a href="http://{{ host.ip_address }}"
+                                target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) (until expiration: <time
                                 datetime="{{host.leased_until}}"> {{host.valid_for}}</time>)
                         </label><br>
                         {% endfor %}
@@ -59,20 +53,10 @@
         </div>
     </div>
 </div>
-<dialog id="account-dialog">
-    <fieldset>
-        <legend>Account</legend>
-        <p> Login: {{user.login}} </p>
-        <p> Telegram linked: {{user.tg_linked}} </p>
-        <p>To link your account send code "{{user.link}}" to the <a href="{{auth_link}}"
-                target="_blank">{{auth_link}}</a></p>
-        <br>
-        <button id="account-dialog-close" autofocus>Close</button>
-</dialog>
 <dialog id="groups-dialog">
     <fieldset>
         <legend>Groups</legend>
-        
+
         <table>
             {% for group in groups %}
             <tr>
@@ -84,15 +68,6 @@
         <button id="groups-dialog-close" autofocus>Close</button>
 </dialog>
 <script>
-    const accountDialog = document.getElementById("account-dialog");
-    document.getElementById("account-dialog-open").addEventListener("click", () => {
-        accountDialog.showModal();
-    });
-
-    document.getElementById("account-dialog-close").addEventListener("click", () => {
-        accountDialog.close();
-    });
-
     const groupsDialog = document.getElementById("groups-dialog");
     document.getElementById("groups-dialog-open").addEventListener("click", () => {
         groupsDialog.showModal();
@@ -110,9 +85,10 @@
         margin-bottom: 0;
         gap: 1em;
     }
-    td, th {
+
+    td,
+    th {
         text-align: left;
         padding: 8px;
     }
 </style>
-{% endblock content %}

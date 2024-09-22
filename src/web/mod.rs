@@ -1,5 +1,6 @@
 mod auth;
 mod hosts;
+mod templates;
 
 use axum::{
     body::Body,
@@ -77,6 +78,7 @@ impl Application {
         let authed_router = Router::new()
             .route("/logout", get(login::logout))
             .route("/hosts", get(hosts::get_hosts))
+            .route("/hosts/all", get(hosts::get_all_hosts))
             .route("/hosts/lease", post(hosts::lease_hosts))
             .route("/hosts/lease/random", post(hosts::lease_random))
             .route("/hosts/release", post(hosts::release_hosts))

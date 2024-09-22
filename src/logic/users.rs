@@ -35,4 +35,8 @@ impl UsersService {
         let mut tx = self.registry.begin().await?;
         tx.get_user(login).await.map_err(|e| e.into())
     }
+    pub async fn get_all_users(&self) -> Result<Vec<User>, UserError> {
+        let mut tx = self.registry.begin().await?;
+        tx.get_all_users().await.map_err(|e| e.into())
+    }
 }
