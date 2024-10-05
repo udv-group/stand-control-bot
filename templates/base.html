@@ -1,21 +1,18 @@
 <!DOCTYPE html>
-<html>
+<html class="dark">
 
 <head>
   <meta charset="utf-8" />
   <title>Stand Control</title>
 
   <script src="https://unpkg.com/htmx.org@1.9.5"
-    integrity="sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO"
-    crossorigin="anonymous">
-  </script>
-
+    integrity="sha384-xcuj3WpfgjlKF+FXhSQFQ0ZNr39ln+hwjN3npfM9VBnUskLolQAcN80McRIVOPuO" crossorigin="anonymous">
+    </script>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body>
+<body class="relative bg-white dark:bg-slate-800">
   {% block content %}{% endblock content %}
-
 </body>
-
 
 </html>

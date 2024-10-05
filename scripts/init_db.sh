@@ -46,5 +46,5 @@ sqlx migrate run
 
 if [[ -z "${SKIP_SEED_HOSTS}" ]]
 then
-    PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "${POSTGRES_DB}" -c "insert into hosts (hostname, ip_address) VALUES ('test', '172.0.0.1'), ('test2', '172.0.0.2');"
+    PGPASSWORD="${POSTGRES_PASSWORD}" psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "${POSTGRES_DB}" -c "insert into hosts (hostname, ip_address, group_id) VALUES ('test', '172.0.0.1', 0), ('test2', '172.0.0.2', 0);"
 fi
