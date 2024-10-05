@@ -2,24 +2,36 @@
 
 {% block content %}
 
-<div class="container">
-    <div class="topnav">
-        <a class="active" href="/hosts">Lease hosts</a>
-        <a href="/hosts/all">All hosts</a>
-        <a id="account-dialog-open">Account</a>
-        <a href="/logout">Logout</a>
-    </div>
+<div
+    class="relative bg-transparent min-h-screen flex flex-col overflow-hidden py-6 sm:py-12 text-gray-900 dark:text-gray-200">
+    <header class="absolute inset-x-0 top-0 z-50">
+        <nav class="flex items-center justify-between p-6 px-8 text-gray-900 dark:text-gray-200" aria-label="Global">
+            <div class="flex gap-x-12">
+                <a href="/hosts" class="text-sm font-semibold leading-6">Lease hosts</a>
+                <a href="/hosts/all" class="text-sm font-semibold leading-6">All hosts</a>
+            </div>
+            <div class="flex gap-x-12 justify-end">
+                <button><a id="account-dialog-open" class="text-sm font-semibold leading-6">Account</a></button>
+                <a href="/logout" class="text-sm font-semibold leading-6">Logout</a>
+            </div>
+        </nav>
+    </header>
     {{page}}
 </div>
 <dialog id="account-dialog">
-    <fieldset>
-        <legend>Account</legend>
-        <p> Login: {{user.login}} </p>
-        <p> Telegram linked: {{user.tg_linked}} </p>
-        <p>To link your account send code "{{user.link}}" to the <a href="{{auth_link}}"
-                target="_blank">{{auth_link}}</a></p>
-        <br>
-        <button id="account-dialog-close" autofocus>Close</button>
+    <div class="bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-200">
+        <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
+            <p class="text-base/7 font-semibold">Account</p>
+            <p class="text-sm/6 font-medium"> Login: {{user.login}} </p>
+            <p class="text-sm/6 font-medium"> Telegram linked: {{user.tg_linked}} </p>
+            <p class="text-sm/6 font-medium">To link your account send code
+                "{{user.link}}" to the <a class="text-blue-600 visited:text-purple-600" href="{{auth_link}}" target="_blank">{{auth_link}}</a></p>
+            <br>
+            <button id="account-dialog-close"
+                class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
+                autofocus>Close</button>
+        </fieldset>
+    </div>
 </dialog>
 <script>
     const accountDialog = document.getElementById("account-dialog");
@@ -31,30 +43,4 @@
         accountDialog.close();
     });
 </script>
-<style>
-    .topnav {
-        overflow: hidden;
-        background-color: #333;
-    }
-
-    .topnav a {
-        float: left;
-        color: #f2f2f2;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
-        font-size: 17px;
-    }
-
-    .topnav a:hover {
-        background-color: #ddd;
-        color: black;
-    }
-
-    td,
-    th {
-        text-align: left;
-        padding: 8px;
-    }
-</style>
 {% endblock content %}

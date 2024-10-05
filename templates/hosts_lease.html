@@ -1,71 +1,90 @@
-<div class="container">
-    <div class="row">
-        <menu>
-            <li>Selected group "{{ selected_group.name }}"</li>
-            <li><button id="groups-dialog-open">View all groups</button></a></li>
-        </menu>
+<div class="flex flex-col place-self-center py-12 w-9/12">
+    <div>
+        <p class="py-2">Selected group "{{ selected_group.name }}"</p>
+        <button id="groups-dialog-open"
+            class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10">View
+            all groups</button>
     </div>
-    {% if let Some(error) = error %}
-    <p style="color:red;"><i>{{error}}</i></p>
-    {% endif %}
-    <div class="row">
-        <div class="col">
-            <div class="table-responsive-sm">
-                <br>
-                <form id="host-form" hx-post="/hosts/lease" hx-target="body">
+    <div class="flex flex-col gap-4 place-self-center py-6 w-full">
+        {% if let Some(error) = error %}
+        <div>
+            <p style="color:red;"><i>{{error}}</i></p>
+        </div>
+        {% endif %}
+        <!-- main block -->
+        <div class="row">
+            <form id="host-form" hx-post="/hosts/lease" hx-target="body">
+                <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
+                    <p class="text-base/7 font-semibold">Available hosts</p>
                     <fieldset>
-                        <legend>Available hosts</legend>
-                        <fieldset>
-                            <legend>Select lease period</legend>
-                            <label for="days">Days:</label>
-                            <input type="number" id="days" name="days" min="0" max="62" value="0">
-                            <label for="days">Hours:</label>
-                            <input type="number" id="hours" name="hours" min="0" max="23" value="1">
-                        </fieldset>
-                        <button type="submit">Lease selected</button>
-                        <button hx-validate="true" hx-post="/hosts/lease/random">Lease random</button>
-                        <br>
-                        {% for host in hosts %}
-                        <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
-                        <label for="{{host.id}}"> <a href="http://{{ host.ip_address }}"
-                                target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) </label><br>
-                        {% endfor %}
+                        <legend>Select lease period</legend>
+                        <label for="days">Days:</label>
+                        <input
+                            class="appearance-none rounded-lg border-none bg-black/5 dark:bg-white/5 py-1.5 px-3 text-sm/6"
+                            type="number" id="days" name="days" min="0" max="62" value="0">
+                        <label for="days">Hours:</label>
+                        <input
+                            class="appearance-none rounded-lg border-none bg-black/5 dark:bg-white/5 py-1.5 px-3 text-sm/6"
+                            type="number" id="hours" name="hours" min="0" max="23" value="1">
                     </fieldset>
-                </form>
-                <br>
-                <form hx-post="/hosts/release" hx-target="body">
-                    <fieldset>
-                        <legend>Your leased hosts</legend>
-                        <button type="submit">Release selected</button>
-                        <button hx-post="/hosts/release/all" hx-include="" hx-confirm="Are you sure?">Release
-                            all</button>
-                        <br>
-                        {% for host in leased %}
-                        <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
-                        <label for="{{host.id}}"> <a href="http://{{ host.ip_address }}"
-                                target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) (until expiration: <time
-                                datetime="{{host.leased_until}}"> {{host.valid_for}}</time>)
-                        </label><br>
-                        {% endfor %}
-                    </fieldset>
-                </form>
-            </div>
+                    <button
+                        class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
+                        type="submit">Lease selected</button>
+                    <button
+                        class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
+                        hx-validate="true" hx-post="/hosts/lease/random">Lease random</button>
+                    <br>
+                    {% for host in hosts %}
+                    <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
+                    <label for="{{host.id}}"> <a class="text-blue-600 visited:text-purple-600" href="http://{{ host.ip_address }}"
+                            target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) </label><br>
+                    {% endfor %}
+                </fieldset>
+            </form>
+            <br>
+            <form hx-post="/hosts/release" hx-target="body">
+                <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
+                    <p class="text-base/7 font-semibold">Your leased hosts</p>
+                    <button
+                        class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
+                        type="submit">Release selected</button>
+                    <button
+                        class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
+                        hx-post="/hosts/release/all" hx-include="" hx-confirm="Are you sure?">Release
+                        all</button>
+                    <br>
+                    {% for host in leased %}
+                    <input class="" type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
+                    <label for="{{host.id}}"> <a class="text-blue-600 visited:text-purple-600" href="http://{{ host.ip_address }}"
+                            target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) (until expiration:
+                        <time datetime="{{host.leased_until}}"> {{host.valid_for}}</time>)
+                    </label><br>
+                    {% endfor %}
+                </fieldset>
+            </form>
         </div>
     </div>
 </div>
 <dialog id="groups-dialog">
-    <fieldset>
-        <legend>Groups</legend>
-
-        <table>
-            {% for group in groups %}
-            <tr>
-                <th>{{ group.name }}</th>
-                <th><button onclick="location.href='/hosts?group_id={{group.id}}'" type="button">Select</button></th>
-            </tr>
-            {% endfor %}
-        </table>
-        <button id="groups-dialog-close" autofocus>Close</button>
+    <div class="bg-white dark:bg-slate-800 justify-center overflow-hidden text-gray-900 dark:text-gray-200">
+        <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
+            <p class="text-base/7 font-semibold">Groups</p>
+            <div class="flex gap-4 place-self-center py-6 w-full">
+                {% for group in groups %}
+                <div>{{ group.name }}</div>
+                <div>
+                    <button onclick="location.href='/hosts?group_id={{group.id}}'" type="button"
+                        class="inline-flex items-center gap-1 rounded-md bg-gray-300 dark:bg-gray-700 py-1 px-2 text-sm/6 font-semibold shadow-inner shadow-white/10">Select</button>
+                </div>
+                {% endfor %}
+            </div>
+            <button id="groups-dialog-close"
+                class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
+                autofocus>
+                Close
+            </button>
+        </fieldset>
+    </div>
 </dialog>
 <script>
     const groupsDialog = document.getElementById("groups-dialog");
@@ -77,18 +96,3 @@
         groupsDialog.close();
     });
 </script>
-<style>
-    menu {
-        list-style-type: none;
-        display: flex;
-        padding: 0;
-        margin-bottom: 0;
-        gap: 1em;
-    }
-
-    td,
-    th {
-        text-align: left;
-        padding: 8px;
-    }
-</style>

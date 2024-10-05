@@ -1,22 +1,20 @@
-<div class="container">
-    <div class="row">
-        <div class="col">
-            <div class="table-responsive-sm">
-                <form id="host-form">
-                    <fieldset>
-                        <legend>All hosts</legend>
-                        {% for host in hosts %}
-                        <input type="hidden" id="{{host.id}}">
-                        <label for="{{host.id}}">
-                            <a href="http://{{ host.ip_address }}" target="_blank">
-                                {{host.ip_address}}
-                            </a> ({{host.hostname}}) ({{host.leased_by}})
-                        </label>
-                        <br>
-                        {% endfor %}
-                    </fieldset>
-                </form>
-            </div>
+<div class="flex flex-col place-self-center py-12 w-9/12">
+    <div class="flex flex-col gap-4 place-self-center py-6 w-full">
+        <div class="row">
+            <form id="host-form" hx-post="/hosts/lease" hx-target="body">
+                <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
+                    <p class="text-base/7 font-semibold">All hosts</p>
+                    {% for host in hosts %}
+                    <input type="hidden" id="{{host.id}}">
+                    <label for="{{host.id}}">
+                        <a class="text-blue-600 visited:text-purple-600" href="http://{{ host.ip_address }}" target="_blank">
+                            {{host.ip_address}}
+                        </a> ({{host.hostname}}) ({{host.leased_by}})
+                    </label>
+                    <br>
+                    {% endfor %}
+                </fieldset>
+            </form>
         </div>
     </div>
 </div>
