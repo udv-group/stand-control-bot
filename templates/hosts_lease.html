@@ -69,12 +69,14 @@
     <div class="bg-white dark:bg-slate-800 justify-center overflow-hidden text-gray-900 dark:text-gray-200">
         <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
             <p class="text-base/7 font-semibold">Groups</p>
-            <div class="flex gap-4 place-self-center py-6 w-full">
+            <div class="flex flex-col gap-4 place-self-center py-6 w-full">
                 {% for group in groups %}
-                <div>{{ group.name }}</div>
-                <div>
-                    <button onclick="location.href='/hosts?group_id={{group.id}}'" type="button"
-                        class="inline-flex items-center gap-1 rounded-md bg-gray-300 dark:bg-gray-700 py-1 px-2 text-sm/6 font-semibold shadow-inner shadow-white/10">Select</button>
+                <div class="flex">
+                    <div class="w-32">{{ group.name }}</div>
+                    <div>
+                        <button onclick="location.href='/hosts?group_id={{group.id}}'" type="button"
+                            class="inline-flex items-center gap-1 rounded-md bg-gray-300 dark:bg-gray-700 py-1 px-2 text-sm/6 font-semibold shadow-inner shadow-white/10">Select</button>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
