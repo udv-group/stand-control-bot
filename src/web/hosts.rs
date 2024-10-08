@@ -13,12 +13,12 @@ use std::{collections::HashMap, ops::Deref};
 use serde::Deserialize;
 
 use super::templates::{
-    format_duration, AllHostsPage, HostInfo, HostsLeasePage, HostsPage, LeaseInfo,
+    format_duration, AllHostsPage, HostInfo, HostsLeasePage, HostsPage, LeasedHostInfo,
 };
 use crate::logic::users::UsersService;
 use crate::{db::models::UserId, logic::hosts::HostsService};
 use crate::{
-    db::models::{GroupId, HostId},
+    db::models::{GroupId, HostId, User as UserDb},
     logic::groups::GroupsService,
 };
 
@@ -100,7 +100,7 @@ pub async fn get_all_hosts(
     let lease_page = AllHostsPage {
         hosts: hosts
             .into_iter()
-            .map(|h| LeaseInfo {
+            .map(|h| LeasedHostInfo {
                 id: h.id,
                 hostname: h.hostname,
                 ip_address: h.ip_address.ip().to_string(),
@@ -261,26 +261,35 @@ pub async fn get_hosts_json(
                     .await
                     .unwrap()
                     .into_iter()
-                    .map(|h| HostInfo {
-                        id: h.id,
-                        hostname: h.hostname,
-                        ip_address: h.ip_address.ip().to_string(),
-                    })
+                    .map(HostInfo::from)
                     .collect::<Vec<_>>(),
             ),
         },
-        None => Json(
-            hosts_service
-                .get_all_hosts()
-                .await
-                .unwrap()
-                .into_iter()
-                .map(|h| HostInfo {
-                    id: h.id,
-                    hostname: h.hostname,
-                    ip_address: h.ip_address.ip().to_string(),
-                })
-                .collect::<Vec<_>>(),
-        ),
+        None => {
+            let users: HashMap<UserId, UserDb> = HashMap::from_iter(
+                user_service
+                    .get_all_users()
+                    .await
+                    .unwrap()
+                    .into_iter()
+                    .map(|user| (user.id, user)),
+            );
+
+            Json(
+                hosts_service
+                    .get_all_hosts()
+                    .await
+                    .unwrap()
+                    .into_iter()
+                    .map(|host| {
+                        let user = host
+                            .user_id
+                            .and_then(|user_id| users.get(&user_id).cloned());
+
+                        (host, user).into()
+                    })
+                    .collect::<Vec<HostInfo>>(),
+            )
+        }
     }
 }
