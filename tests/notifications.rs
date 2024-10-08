@@ -23,7 +23,7 @@ impl BotAdapter for TestAdapter {
 }
 
 #[tokio::test]
-async fn notification_send() -> Result<()> {
+async fn release_notification_send() -> Result<()> {
     let (mut test_registry, registry) = create_registry().await;
 
     let sent = AsyncCell::<Vec<String>>::new().into_shared();
@@ -37,7 +37,7 @@ async fn notification_send() -> Result<()> {
     let notifier = Notifier::new(registry, test_adapter);
 
     notifier
-        .notify(Notification::HostsReleased((vec![host.id], user.id)))
+        .notify(user.id, &Notification::HostsReleased(vec![host.id]))
         .await?;
     let user_id = sent
         .try_take()
