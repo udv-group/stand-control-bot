@@ -9,7 +9,7 @@
                     <label for="{{host.id}}">
                         <a class="text-blue-600 visited:text-purple-600" href="http://{{ host.ip_address }}" target="_blank">
                             {{host.ip_address}}
-                        </a> ({{host.hostname}}) ({{host.leased_by}})
+                        </a> ({{host.hostname}}) ({% if host.lease_info.is_some() %}{{host.lease_info.clone().unwrap().leased_by}}{% else %}free{% endif %})
                     </label>
                     <br>
                     {% endfor %}

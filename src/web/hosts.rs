@@ -7,14 +7,12 @@ use axum::{
 use axum_extra::extract::{CookieJar, Form, OptionalQuery};
 use axum_flash::{Flash, IncomingFlashes};
 use axum_login::AuthUser;
-use chrono::{TimeDelta, Utc};
+use chrono::TimeDelta;
 use std::{collections::HashMap, ops::Deref};
 
 use serde::Deserialize;
 
-use super::templates::{
-    format_duration, AllHostsPage, HostInfo, HostsLeasePage, HostsPage, LeasedHostInfo,
-};
+use super::templates::{AllHostsPage, HostInfo, HostsLeasePage, HostsPage};
 use crate::logic::users::UsersService;
 use crate::{db::models::UserId, logic::hosts::HostsService};
 use crate::{
@@ -88,31 +86,21 @@ pub async fn get_all_hosts(
     State(AuthLink(auth_link)): State<AuthLink>,
     Extension(user): Extension<User>,
 ) -> impl IntoResponse {
-    let users: HashMap<UserId, String> = user_service
+    let users: HashMap<UserId, UserDb> = user_service
         .get_all_users()
         .await
         .unwrap()
         .into_iter()
-        .map(|u| (u.id, u.login))
+        .map(|u| (u.id, u))
         .collect();
     let hosts = hosts_service.get_all_hosts().await.unwrap();
 
     let lease_page = AllHostsPage {
         hosts: hosts
             .into_iter()
-            .map(|h| LeasedHostInfo {
-                id: h.id,
-                hostname: h.hostname,
-                ip_address: h.ip_address.ip().to_string(),
-                leased_until: h.leased_until.unwrap_or_default(),
-                leased_by: h
-                    .user_id
-                    .and_then(|id| users.get(&id).cloned())
-                    .unwrap_or("free".to_string()),
-                valid_for: h
-                    .leased_until
-                    .map(|v| format_duration(v - Utc::now()))
-                    .unwrap_or("free".to_string()),
+            .map(|h| {
+                let user = h.user_id.and_then(|user_id| users.get(&user_id).cloned());
+                (h, user).into()
             })
             .collect(),
     };
