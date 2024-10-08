@@ -21,14 +21,14 @@ pub struct HostsLeasePage {
     pub groups: Vec<GroupInfo>,
     pub selected_group: GroupInfo,
     pub hosts: Vec<HostInfo>,
-    pub leased: Vec<LeasedHostInfo>,
+    pub leased: Vec<HostInfo>,
     pub error: Option<String>,
 }
 
 #[derive(Template, Debug)]
 #[template(path = "all_hosts.html", escape = "none")]
 pub struct AllHostsPage {
-    pub hosts: Vec<LeasedHostInfo>,
+    pub hosts: Vec<HostInfo>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -61,7 +61,7 @@ impl From<Group> for GroupInfo {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct LeaseInfo {
     pub leased_until: DateTime<Utc>,
     pub valid_for: String,
@@ -112,29 +112,6 @@ impl From<LeasedHost> for HostInfo {
             hostname: value.hostname,
             ip_address: value.ip_address.ip().to_string(),
             lease_info: Some((value.user, value.leased_until).into()),
-        }
-    }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct LeasedHostInfo {
-    pub id: HostId,
-    pub hostname: String,
-    pub ip_address: String,
-    pub leased_until: DateTime<Utc>,
-    pub valid_for: String,
-    pub leased_by: String,
-}
-
-impl From<LeasedHost> for LeasedHostInfo {
-    fn from(value: LeasedHost) -> Self {
-        Self {
-            id: value.id,
-            hostname: value.hostname,
-            ip_address: value.ip_address.ip().to_string(),
-            leased_until: value.leased_until,
-            valid_for: format_duration(value.leased_until - Utc::now()),
-            leased_by: value.user.login,
         }
     }
 }

@@ -57,7 +57,7 @@
                     <input class="" type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
                     <label for="{{host.id}}"> <a class="text-blue-600 visited:text-purple-600" href="http://{{ host.ip_address }}"
                             target="_blank">{{host.ip_address}}</a> ({{host.hostname}}) (until expiration:
-                        <time datetime="{{host.leased_until}}"> {{host.valid_for}}</time>)
+                        <time datetime="{{host.lease_info.clone().unwrap().leased_until}}"> {{host.lease_info.clone().unwrap().valid_for}}</time>)
                     </label><br>
                     {% endfor %}
                 </fieldset>
