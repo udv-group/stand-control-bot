@@ -1,6 +1,6 @@
 [package]
 name = "stand-control-bot"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 repository = "https://github.com/goDeni/stand-control-bot"
 default-run = "stand-control-bot"
