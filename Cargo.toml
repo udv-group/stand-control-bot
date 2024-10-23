@@ -2,7 +2,7 @@
 name = "stand-control-bot"
 version = "0.1.5"
 edition = "2021"
-repository = "https://github.com/goDeni/stand-control-bot"
+repository = "https://github.com/udv-group/stand-control-bot"
 default-run = "stand-control-bot"
 
 [dependencies]
