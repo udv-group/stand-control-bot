@@ -1,4 +1,7 @@
-use std::{collections::HashMap, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 
 use chrono::{DateTime, Utc};
 
@@ -34,7 +37,7 @@ pub async fn hosts_release_timer<T: BotAdapter>(registry: Registry, notifier: No
 struct ReleaseTimer<T: BotAdapter> {
     registry: Registry,
     notifier: Notifier<T>,
-    last_expiration_soon_notification: HashMap<UserId, (DateTime<Utc>, Vec<HostId>)>,
+    last_expiration_soon_notification: HashMap<UserId, (DateTime<Utc>, HashSet<HostId>)>,
     expiration_notify_delay_time: Duration,
 }
 
@@ -85,13 +88,15 @@ impl<T: BotAdapter> ReleaseTimer<T> {
         let next_expiration_date = Utc::now() + self.expiration_notify_delay_time;
         let expire_soon_hosts = tx.get_leased_until_hosts(next_expiration_date).await?;
 
-        let mut expire_soon_notifications: HashMap<UserId, Vec<HostId>> = HashMap::new();
+        let mut expire_soon_notifications: HashMap<UserId, HashSet<HostId>> = HashMap::new();
 
         expire_soon_hosts.into_iter().for_each(|host| {
             expire_soon_notifications
                 .entry(host.user.id)
-                .and_modify(|v| v.push(host.id))
-                .or_insert(vec![host.id]);
+                .and_modify(|v| {
+                    v.insert(host.id);
+                })
+                .or_insert(HashSet::from_iter(vec![host.id]));
         });
 
         for (user_id, hosts_ids) in expire_soon_notifications.into_iter() {
@@ -106,7 +111,8 @@ impl<T: BotAdapter> ReleaseTimer<T> {
                 }
             }
 
-            let notification = Notification::ExpirationSoon(hosts_ids.clone());
+            let notification =
+                Notification::ExpirationSoon(hosts_ids.clone().into_iter().collect());
             if let Err(err) = self.notifier.notify(user_id, &notification).await {
                 error!(
                     "Notification sending error {:?} {:?}: {err}",
