@@ -187,7 +187,13 @@ pub async fn lease_hosts(
     }
 }
 
+#[derive(Deserialize)]
+pub struct LeaseRandomHostParams {
+    pub group_id: GroupId,
+}
+
 pub async fn lease_random(
+    params: Query<LeaseRandomHostParams>,
     State(service): State<HostsService>,
     flash: Flash,
     Extension(user): Extension<User>,
@@ -197,6 +203,7 @@ pub async fn lease_random(
         .lease_random(
             &user.id().into(),
             TimeDelta::hours(*data.hours + *data.days * 24),
+            &params.group_id,
         )
         .await;
     match res {

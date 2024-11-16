@@ -32,7 +32,7 @@
                         type="submit">Lease selected</button>
                     <button
                         class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
-                        hx-validate="true" hx-post="/hosts/lease/random">Lease random</button>
+                        hx-validate="true" hx-post="/hosts/lease/random?group_id={{ selected_group.id }}">Lease random</button>
                     <br>
                     {% for host in hosts %}
                     <input type="checkbox" id="{{host.id}}" name="hosts_ids" value="{{host.id}}">
