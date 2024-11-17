@@ -122,12 +122,13 @@ impl HostsService {
         &self,
         user_id: &UserId,
         lease_for: chrono::TimeDelta,
+        group_id: &GroupId,
     ) -> Result<LeasedHost, HostError> {
         let mut tx = self.registry.begin().await?;
         if tx.get_leased_hosts(user_id).await?.len() >= self.lease_limit {
             return Err(HostError::LeaseLimit);
         };
-        let host = tx.get_first_available_host().await?;
+        let host = tx.get_first_available_group_host(group_id).await?;
         tx.lease_hosts(user_id, &[host.id], Utc::now() + lease_for)
             .await?;
         let leased = tx.get_leased_hosts(user_id).await?.into_iter().next();

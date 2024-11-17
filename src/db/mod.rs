@@ -55,8 +55,12 @@ impl<'c> RegistryTx<'c> {
             .fetch_all(&mut *self.tx)
             .await
     }
-    pub async fn get_first_available_host(&mut self) -> sqlx::Result<Host> {
-        sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL LIMIT 1")
+    pub async fn get_first_available_group_host(
+        &mut self,
+        group_id: &GroupId,
+    ) -> sqlx::Result<Host> {
+        sqlx::query_as("SELECT * FROM hosts WHERE user_id is NULL AND group_id = $1 LIMIT 1")
+            .bind(group_id)
             .fetch_one(&mut *self.tx)
             .await
     }

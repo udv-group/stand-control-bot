@@ -35,12 +35,13 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
 #[tokio::test]
 async fn leasing_random_host_leases_one_host() {
     let (mut gen, hosts_service) = create_service().await;
+    let group = gen.generate_group().await;
     let host1 = gen.generate_host().await;
     let host2 = gen.generate_host().await;
     let user = gen.generate_user().await;
 
     let leased = hosts_service
-        .lease_random(&user.id, TimeDelta::seconds(42))
+        .lease_random(&user.id, TimeDelta::seconds(42), &group.id)
         .await
         .unwrap();
 
@@ -50,6 +51,7 @@ async fn leasing_random_host_leases_one_host() {
 #[tokio::test]
 async fn leasing_multiple_hosts() {
     let (mut gen, service) = create_service().await;
+    let group = gen.generate_group().await;
     let host1 = gen.generate_host().await;
     let host2 = gen.generate_host().await;
     let host3 = gen.generate_host().await;
@@ -61,7 +63,7 @@ async fn leasing_multiple_hosts() {
         .unwrap();
 
     service
-        .lease_random(&user.id, TimeDelta::seconds(42))
+        .lease_random(&user.id, TimeDelta::seconds(42), &group.id)
         .await
         .unwrap();
 
@@ -173,6 +175,7 @@ async fn leased_until_read() {
 #[tokio::test]
 async fn lease_limit() {
     let (mut get, service) = create_service_with_limit(2).await;
+    let group = get.generate_group().await;
     let host1 = get.generate_host().await;
     let host2 = get.generate_host().await;
     let host3 = get.generate_host().await;
@@ -229,7 +232,10 @@ async fn lease_limit() {
         .unwrap();
 
     // leasing random when at limit
-    match service.lease_random(&user.id, TimeDelta::seconds(42)).await {
+    match service
+        .lease_random(&user.id, TimeDelta::seconds(42), &group.id)
+        .await
+    {
         Ok(_) => panic!("Didn't error on lease limit"),
         Err(e) => match e {
             HostError::LeaseLimit => (),
