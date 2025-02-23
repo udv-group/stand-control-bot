@@ -29,7 +29,7 @@ pub struct RegistryTx<'c> {
     tx: Transaction<'c, Postgres>,
 }
 
-impl<'c> RegistryTx<'c> {
+impl RegistryTx<'_> {
     pub async fn commit(self) -> sqlx::Result<()> {
         self.tx.commit().await
     }
