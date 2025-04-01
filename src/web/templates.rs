@@ -34,6 +34,7 @@ pub struct AllHostsPage {
 #[derive(Deserialize, Debug)]
 pub struct UserInfo {
     pub login: String,
+    pub groups: Vec<String>,
     pub tg_linked: bool,
     pub link: String,
 }
@@ -41,6 +42,7 @@ impl From<User> for UserInfo {
     fn from(value: User) -> Self {
         Self {
             login: value.username,
+            groups: value.groups,
             tg_linked: value.tg_handle.is_some(),
             link: value.link,
         }
@@ -71,7 +73,7 @@ impl From<(UserDb, DateTime<Utc>)> for LeaseInfo {
     fn from(value: (UserDb, DateTime<Utc>)) -> Self {
         let (user, leased_until) = value;
         LeaseInfo {
-            leased_by: user.login,
+            leased_by: user.email,
             leased_until,
             valid_for: format_duration(leased_until - Utc::now()),
         }

@@ -38,13 +38,18 @@ impl Generator {
         }
     }
     pub async fn generate_host(&mut self) -> MockHost {
+        self.generate_host_in_group(&GroupId(0)).await
+    }
+
+    pub async fn generate_host_in_group(&mut self, group_id: &GroupId) -> MockHost {
         let hostname = Uuid::new_v4().to_string();
         let ip: Ipv4Addr = Faker.fake();
         let net = IpNetwork::new(IpAddr::V4(ip), 32).unwrap();
         let row = sqlx::query!(
-            "INSERT INTO hosts (hostname, ip_address) VALUES ($1, $2) RETURNING id",
+            "INSERT INTO hosts (hostname, ip_address, group_id) VALUES ($1, $2, $3) RETURNING id",
             hostname,
-            net
+            net,
+            group_id.clone().0,
         )
         .fetch_one(&self.pool)
         .await
@@ -58,13 +63,15 @@ impl Generator {
     pub async fn generate_user(&mut self) -> MockUser {
         let mut rng = rand::thread_rng();
 
-        let login = Uuid::new_v4().to_string();
-        let tg_handle = rng.gen::<u64>().to_string();
+        let mail = Uuid::new_v4().to_string();
+        let dn = mail.clone();
+        let tg_handle = rng.gen::<u32>().to_string();
 
         let row = sqlx::query!(
-            "INSERT INTO users (login, tg_handle) VALUES ($1, $2) RETURNING id",
-            login,
-            tg_handle
+            "INSERT INTO users (email, tg_handle, dn) VALUES ($1, $2, $3) RETURNING id",
+            mail,
+            tg_handle,
+            dn,
         )
         .fetch_one(&self.pool)
         .await

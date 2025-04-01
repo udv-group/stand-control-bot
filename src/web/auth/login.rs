@@ -6,6 +6,7 @@ use axum::{
 use axum_flash::{Flash, IncomingFlashes};
 use secrecy::Secret;
 use serde::Deserialize;
+use tracing::error;
 use tracing::warn;
 
 use crate::web::{
@@ -45,10 +46,10 @@ pub async fn login(
         }
     };
 
-    session
-        .login(&user)
-        .await
-        .map_err(|_| "Unexpected error".to_string())?;
+    session.login(&user).await.map_err(|err| {
+        error!("Got unexpected error: {}", err);
+        "Unexpected error".to_string()
+    })?;
     Ok(Redirect::to("/hosts"))
 }
 

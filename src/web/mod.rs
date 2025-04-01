@@ -18,20 +18,20 @@ use hyper::Request;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
-use tower_http::trace::TraceLayer;
-use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, SessionManagerLayer};
-use tracing::info;
-use uuid::Uuid;
-
 use self::auth::{
     login,
     middleware::{auth_middleware, Backend},
 };
+use crate::ldap::UsersInfo;
 use crate::{
     configuration::Settings,
     db::Registry,
     logic::{groups::GroupsService, hosts::HostsService, users::UsersService},
 };
+use tower_http::trace::TraceLayer;
+use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, SessionManagerLayer};
+use tracing::info;
+use uuid::Uuid;
 
 #[derive(FromRef, Clone)]
 struct AppState {
@@ -53,15 +53,16 @@ pub struct Application {
 impl Application {
     pub async fn build(
         settings: &Settings,
+        ldap: ldap3::Ldap,
         auth_link: String,
     ) -> Result<Application, anyhow::Error> {
         let tracing_layer = TraceLayer::new_for_http().make_span_with(|req: &Request<Body>| {
-                let method = req.method();
-                let uri = req.uri();
-                let matched_path = req.extensions().get::<MatchedPath>().map(|p| p.as_str());
+            let method = req.method();
+            let uri = req.uri();
+            let matched_path = req.extensions().get::<MatchedPath>().map(|p| p.as_str());
 
-                tracing::debug_span!("http-request", %method, %uri, matched_path, request_id = %Uuid::new_v4())
-            });
+            tracing::debug_span!("http-request", %method, %uri, matched_path, request_id = %Uuid::new_v4())
+        });
 
         let session_layer = SessionManagerLayer::new(MemoryStore::default())
             .with_secure(true)
@@ -69,8 +70,15 @@ impl Application {
 
         let registry = Registry::new(&settings.database).await?;
 
+        let users_info = UsersInfo::new(
+            ldap.clone(),
+            &settings.ldap.login,
+            &settings.ldap.password,
+            settings.ldap.users_query.clone(),
+        )
+        .await?;
         let auth_layer = AuthManagerLayerBuilder::new(
-            Backend::new(&settings.ldap, registry.clone()),
+            Backend::new(ldap, registry.clone(), users_info.clone()),
             session_layer,
         )
         .build();

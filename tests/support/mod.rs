@@ -1,4 +1,3 @@
-pub mod app;
 pub mod gen;
 pub mod registry;
 
