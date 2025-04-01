@@ -23,6 +23,17 @@ pub struct LdapSettings {
     pub url: String,
     pub use_tls: bool,
     pub no_tls_verify: bool,
+    pub login: String,
+    pub password: Secret<String>,
+    pub users_query: String,
+}
+
+impl From<LdapSettings> for ldap3::LdapConnSettings {
+    fn from(val: LdapSettings) -> Self {
+        ldap3::LdapConnSettings::new()
+            .set_no_tls_verify(val.no_tls_verify)
+            .set_starttls(val.use_tls)
+    }
 }
 
 #[derive(Deserialize, Clone)]

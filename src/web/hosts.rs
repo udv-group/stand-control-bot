@@ -239,7 +239,7 @@ pub async fn release_all(
 
 #[derive(Deserialize)]
 pub struct GetHostsQuery {
-    login: String,
+    mail: String,
 }
 
 pub async fn get_hosts_json(
@@ -248,7 +248,7 @@ pub async fn get_hosts_json(
     OptionalQuery(query): OptionalQuery<GetHostsQuery>,
 ) -> impl IntoResponse {
     match query {
-        Some(GetHostsQuery { login }) => match user_service.get_user(&login).await.unwrap() {
+        Some(GetHostsQuery { mail }) => match user_service.get_user_by_mail(&mail).await.unwrap() {
             None => Json(vec![]),
             Some(user) => Json(
                 hosts_service

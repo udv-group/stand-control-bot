@@ -36,8 +36,8 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
 async fn leasing_random_host_leases_one_host() {
     let (mut gen, hosts_service) = create_service().await;
     let group = gen.generate_group().await;
-    let host1 = gen.generate_host().await;
-    let host2 = gen.generate_host().await;
+    let host1 = gen.generate_host_in_group(&group.id).await;
+    let host2 = gen.generate_host_in_group(&group.id).await;
     let user = gen.generate_user().await;
 
     let leased = hosts_service
@@ -52,9 +52,9 @@ async fn leasing_random_host_leases_one_host() {
 async fn leasing_multiple_hosts() {
     let (mut gen, service) = create_service().await;
     let group = gen.generate_group().await;
-    let host1 = gen.generate_host().await;
-    let host2 = gen.generate_host().await;
-    let host3 = gen.generate_host().await;
+    let host1 = gen.generate_host_in_group(&group.id).await;
+    let host2 = gen.generate_host_in_group(&group.id).await;
+    let host3 = gen.generate_host_in_group(&group.id).await;
     let user = gen.generate_user().await;
 
     service

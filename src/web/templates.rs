@@ -71,7 +71,7 @@ impl From<(UserDb, DateTime<Utc>)> for LeaseInfo {
     fn from(value: (UserDb, DateTime<Utc>)) -> Self {
         let (user, leased_until) = value;
         LeaseInfo {
-            leased_by: user.login,
+            leased_by: user.email,
             leased_until,
             valid_for: format_duration(leased_until - Utc::now()),
         }

@@ -1,14 +1,14 @@
+use crate::db::models::User as DbUser;
+use crate::db::Registry;
+use crate::ldap::UsersInfo;
 use axum::response::IntoResponse;
 use axum::response::{Redirect, Response};
 use axum::{async_trait, extract::Request, middleware::Next};
 use axum_login::{AuthUser, AuthnBackend, UserId};
-use ldap3::{LdapConnAsync, LdapConnSettings, LdapError};
+use ldap3::Ldap;
+use ldap3::LdapError;
 use secrecy::{ExposeSecret, Secret};
 use tracing::info;
-
-use crate::configuration::LdapSettings;
-use crate::db::models::User as DbUser;
-use crate::db::Registry;
 
 #[derive(Debug, Clone)]
 pub struct User {
@@ -23,7 +23,7 @@ impl From<DbUser> for User {
     fn from(user: DbUser) -> Self {
         Self {
             id: *user.id,
-            username: user.login,
+            username: user.email,
             tg_handle: user.tg_handle,
             link: user.link.clone(),
             session_token: user.link.into_bytes(),
@@ -45,18 +45,16 @@ impl AuthUser for User {
 
 #[derive(Clone)]
 pub struct Backend {
-    ldap_uri: String,
-    ldap_settings: LdapConnSettings,
+    users_info: UsersInfo,
+    ldap: Ldap,
     registry: Registry,
 }
 
 impl Backend {
-    pub fn new(settings: &LdapSettings, registry: Registry) -> Self {
+    pub fn new(ldap: Ldap, registry: Registry, users_info: UsersInfo) -> Self {
         Backend {
-            ldap_uri: settings.url.clone(),
-            ldap_settings: LdapConnSettings::new()
-                .set_no_tls_verify(settings.no_tls_verify)
-                .set_starttls(settings.use_tls),
+            users_info,
+            ldap,
             registry,
         }
     }
@@ -74,6 +72,8 @@ pub enum AuthError {
     LdapConnError(#[from] LdapError),
     #[error("Database error")]
     DbError(#[from] sqlx::Error),
+    #[error("Unexpected error")]
+    AnyhowErr(#[from] anyhow::Error),
 }
 
 #[async_trait]
@@ -86,27 +86,35 @@ impl AuthnBackend for Backend {
         &self,
         Credentials { username, password }: Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
-        let (conn, mut ldap) =
-            LdapConnAsync::with_settings(self.ldap_settings.clone(), &self.ldap_uri).await?;
-        ldap3::drive!(conn);
-        // NB: slapd does not allow AD-style login with jon.doe@example.com
+        let u_info = self.users_info.find_user_info(username.clone()).await?;
+        if u_info.is_none() {
+            info!("Authentication failed for '{}': unknown user", username);
+            return Ok(None);
+        }
+
+        let u_info = u_info.unwrap();
+        let mut ldap = self.ldap.clone();
         let resp = ldap
-            .simple_bind(&username, password.expose_secret())
+            .simple_bind(&u_info.dn, password.expose_secret())
             .await
             .and_then(|r| r.success());
-        ldap.unbind().await?;
 
         if let Err(err) = resp {
             info!("Authentication failed for '{}': '{}'", username, err);
             return Ok(None);
         }
-        let user = self.registry.begin().await?.get_user(&username).await?;
+        let user = self
+            .registry
+            .begin()
+            .await?
+            .get_user_by_dn(&u_info.dn)
+            .await?;
         let user = match user {
             Some(u) => u,
             None => {
                 let mut tx = self.registry.begin().await?;
-                tx.add_user(&username, None, None).await?;
-                let user = tx.get_user(&username).await?;
+                tx.add_user(&u_info.dn, None, &u_info.email).await?;
+                let user = tx.get_user_by_dn(&u_info.dn).await?;
                 tx.commit().await?;
                 user.unwrap()
             }

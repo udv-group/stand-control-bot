@@ -116,8 +116,8 @@ pub struct Group {
 #[derive(Serialize, Deserialize, Clone, Debug, FromRow)]
 pub struct User {
     pub id: UserId,
-    pub login: String,
+    pub dn: String,
     pub tg_handle: Option<String>,
-    pub email: Option<String>,
+    pub email: String,
     pub link: String,
 }

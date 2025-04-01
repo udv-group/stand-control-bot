@@ -79,7 +79,7 @@ impl RegistryTx<'_> {
     pub async fn get_leased_hosts(&mut self, user_id: &UserId) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, hosts.group_id, users.id, users.login, users.tg_handle, users.email, users.link 
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, hosts.group_id, users.id, users.dn, users.tg_handle, users.email, users.link 
             FROM hosts JOIN users on hosts.user_id = users.id 
             WHERE hosts.user_id = $1 ORDER BY hosts.leased_until, hosts.ip_address ASC
             "#,
@@ -93,7 +93,7 @@ impl RegistryTx<'_> {
     ) -> sqlx::Result<Vec<LeasedHost>> {
         sqlx::query_as(
             r#"
-            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, hosts.group_id, users.id, users.login, users.tg_handle, users.email, users.link  
+            SELECT hosts.id as hid, hosts.hostname, hosts.ip_address, hosts.leased_until, hosts.group_id, users.id, users.dn, users.tg_handle, users.email, users.link  
             FROM hosts JOIN users on hosts.user_id = users.id
             WHERE hosts.leased_until < $1
             "#,
@@ -156,8 +156,13 @@ impl RegistryTx<'_> {
             .fetch_optional(&mut *self.tx)
             .await
     }
-    pub async fn get_user(&mut self, login: &str) -> sqlx::Result<Option<User>> {
-        sqlx::query_as!(User, "SELECT * FROM users WHERE login = $1", login)
+    pub async fn get_user_by_mail(&mut self, mail: &str) -> sqlx::Result<Option<User>> {
+        sqlx::query_as!(User, "SELECT * FROM users WHERE email = $1", mail)
+            .fetch_optional(&mut *self.tx)
+            .await
+    }
+    pub async fn get_user_by_dn(&mut self, dn: &str) -> sqlx::Result<Option<User>> {
+        sqlx::query_as!(User, "SELECT * FROM users WHERE dn = $1", dn)
             .fetch_optional(&mut *self.tx)
             .await
     }
@@ -182,13 +187,13 @@ impl RegistryTx<'_> {
     }
     pub async fn add_user(
         &mut self,
-        login: &str,
+        dn: &str,
         tg_handle: Option<&str>,
-        email: Option<&str>,
+        email: &str,
     ) -> sqlx::Result<UserId> {
         let rec = sqlx::query!(
-            "INSERT INTO users (login, tg_handle, email) VALUES ($1, $2, $3) RETURNING id",
-            login,
+            "INSERT INTO users (dn, tg_handle, email) VALUES ($1, $2, $3) RETURNING id",
+            dn,
             tg_handle,
             email
         )
