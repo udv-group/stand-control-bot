@@ -25,10 +25,6 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
@@ -50,7 +46,8 @@ jobs:
         run: |
           cargo sqlx prepare --workspace --check
       - name: Run tests
-        run: cargo test
+        run: |
+          DATABASE_URL=postgres://postgres:password@localhost:5432/stand_control_bot cargo test
 
   fmt:
     name: Rustfmt
