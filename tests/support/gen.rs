@@ -65,7 +65,7 @@ impl Generator {
 
         let mail = Uuid::new_v4().to_string();
         let dn = mail.clone();
-        let tg_handle = rng.gen::<u64>().to_string();
+        let tg_handle = rng.gen::<u32>().to_string();
 
         let row = sqlx::query!(
             "INSERT INTO users (email, tg_handle, dn) VALUES ($1, $2, $3) RETURNING id",
