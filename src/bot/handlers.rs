@@ -35,11 +35,12 @@ async fn main_state_handler(bot: Bot, msg: Message, users_service: UsersService)
     tracing::debug!(
         "Handling message. chat_id={} from={:?}",
         msg.chat.id,
-        msg.from().map(|f| f.id)
+        msg.from.clone().map(|f| f.id)
     );
 
     let user_id = msg
-        .from()
+        .from
+        .clone()
         .map(|m_from| m_from.id)
         .with_context(|| "Message without user_id")?;
     let link = msg
@@ -74,7 +75,7 @@ async fn handle_start_command(bot: Bot, msg: Message) -> HandlerResult {
         "Handling {:?} command. chat_id={} from={:?}",
         msg.text(),
         msg.chat.id,
-        msg.from().map(|f| f.id)
+        msg.from.clone().map(|f| f.id)
     );
     bot.send_message(msg.chat.id, "Hello, send your link code")
         .await?;
