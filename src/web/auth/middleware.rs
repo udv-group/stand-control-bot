@@ -6,9 +6,7 @@ use axum::response::IntoResponse;
 use axum::response::{Redirect, Response};
 use axum::{async_trait, extract::Request, middleware::Next};
 use axum_login::{AuthUser, AuthnBackend, UserId};
-use ldap3::Ldap;
-use ldap3::LdapError;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::Secret;
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -50,15 +48,13 @@ impl AuthUser for User {
 #[derive(Clone)]
 pub struct Backend {
     users_info: UsersInfo,
-    ldap: Ldap,
     registry: Registry,
 }
 
 impl Backend {
-    pub fn new(ldap: Ldap, registry: Registry, users_info: UsersInfo) -> Self {
+    pub fn new(registry: Registry, users_info: UsersInfo) -> Self {
         Backend {
             users_info,
-            ldap,
             registry,
         }
     }
@@ -72,8 +68,6 @@ pub struct Credentials {
 
 #[derive(thiserror::Error, Debug)]
 pub enum AuthError {
-    #[error("Failed to connec to to ldap")]
-    LdapConnError(#[from] LdapError),
     #[error("Database error")]
     DbError(#[from] sqlx::Error),
     #[error("Unexpected error: {0}")]
@@ -90,18 +84,15 @@ impl AuthnBackend for Backend {
         &self,
         Credentials { username, password }: Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
-        let u_info = self.users_info.find_user_info(username.clone()).await?;
-        if u_info.is_none() {
+        let Some(u_info) = self.users_info.find_user_info(username.clone()).await? else {
             info!("Authentication failed for '{}': unknown user", username);
             return Ok(None);
-        }
+        };
 
-        let u_info = u_info.unwrap();
-        let mut ldap = self.ldap.clone();
-        let resp = ldap
-            .simple_bind(&u_info.dn, password.expose_secret())
-            .await
-            .and_then(|r| r.success());
+        let resp = self
+            .users_info
+            .check_authentication(&u_info.dn, &password)
+            .await;
 
         if let Err(err) = resp {
             info!("Authentication failed for '{}': '{}'", username, err);
@@ -135,11 +126,10 @@ impl AuthnBackend for Backend {
             .get_user_by_id(&user_id.into())
             .await?;
 
-        if user.is_none() {
+        let Some(user) = user else {
             return Ok(None);
-        }
+        };
 
-        let user = user.unwrap();
         let u_info = self
             .users_info
             .get_user_info(&user.dn)

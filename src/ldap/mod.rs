@@ -3,12 +3,12 @@ use ldap3::{ResultEntry, SearchEntry};
 use secrecy::ExposeSecret;
 use secrecy::Secret;
 
-use anyhow::anyhow;
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 #[derive(Clone)]
 pub struct UsersInfo {
     pub ldap: Ldap,
+    pub authorized_ldap: Ldap,
     pub users_query: String,
 }
 
@@ -54,23 +54,21 @@ impl TryFrom<SearchEntry> for AdUserInfo {
 }
 
 impl UsersInfo {
-    pub async fn new(
-        mut ldap: Ldap,
-        login: &str,
-        password: &Secret<String>,
-        users_query: String,
-    ) -> Result<Self> {
-        ldap.simple_bind(login, password.expose_secret())
-            .await?
-            .success()?;
-
-        Ok(Self { ldap, users_query })
+    pub async fn new(ldap: Ldap, authorized_ldap: Ldap, users_query: String) -> Result<Self> {
+        Ok(Self {
+            ldap,
+            users_query,
+            authorized_ldap,
+        })
     }
 
-    pub async fn do_ldap_request(&self, query: &str, filter: &str) -> Result<Vec<ResultEntry>> {
-        let res = self
-            .ldap
-            .clone()
+    async fn do_authorized_ldap_request(
+        &self,
+        query: &str,
+        filter: &str,
+    ) -> Result<Vec<ResultEntry>> {
+        let mut ldap = self.authorized_ldap.clone();
+        let res = ldap
             .search(
                 query,
                 ldap3::Scope::Subtree,
@@ -86,7 +84,7 @@ impl UsersInfo {
     }
 
     pub async fn get_user_info(&self, user_dn: &str) -> Result<Option<AdUserInfo>> {
-        let rs = self.do_ldap_request(user_dn, "(mail=*)").await?;
+        let rs = self.do_authorized_ldap_request(user_dn, "(mail=*)").await?;
         if let Some(entry) = rs.first() {
             return Ok(Some(AdUserInfo::try_from(SearchEntry::construct(
                 entry.clone(),
@@ -97,7 +95,7 @@ impl UsersInfo {
 
     pub async fn find_user_info(&self, login_or_mail: String) -> Result<Option<AdUserInfo>> {
         let rs = self
-            .do_ldap_request(
+            .do_authorized_ldap_request(
                 &self.users_query,
                 &format!(
                     "(|(mail={})(sAMAccountName={}))",
@@ -112,5 +110,25 @@ impl UsersInfo {
             ))?));
         }
         Ok(None)
+    }
+
+    pub async fn check_authentication(
+        &self,
+        user_dn: &str,
+        password: &Secret<String>,
+    ) -> Result<()> {
+        if password.expose_secret().is_empty() {
+            return Err(anyhow!("Empty password"));
+        };
+        let mut ldap = self.ldap.clone();
+        let result = ldap
+            .simple_bind(user_dn, password.expose_secret())
+            .await
+            .and_then(|r| r.success());
+
+        if let Err(err) = result {
+            return Err(err.into());
+        }
+        Ok(())
     }
 }

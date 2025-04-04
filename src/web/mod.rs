@@ -54,6 +54,7 @@ impl Application {
     pub async fn build(
         settings: &Settings,
         ldap: ldap3::Ldap,
+        authorized_ldap: ldap3::Ldap,
         auth_link: String,
     ) -> Result<Application, anyhow::Error> {
         let tracing_layer = TraceLayer::new_for_http().make_span_with(|req: &Request<Body>| {
@@ -70,15 +71,10 @@ impl Application {
 
         let registry = Registry::new(&settings.database).await?;
 
-        let users_info = UsersInfo::new(
-            ldap.clone(),
-            &settings.ldap.login,
-            &settings.ldap.password,
-            settings.ldap.users_query.clone(),
-        )
-        .await?;
+        let users_info =
+            UsersInfo::new(ldap, authorized_ldap, settings.ldap.users_query.clone()).await?;
         let auth_layer = AuthManagerLayerBuilder::new(
-            Backend::new(ldap, registry.clone(), users_info.clone()),
+            Backend::new(registry.clone(), users_info.clone()),
             session_layer,
         )
         .build();

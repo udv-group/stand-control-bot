@@ -1,5 +1,6 @@
 use anyhow::Context;
 use ldap3::LdapConnAsync;
+use secrecy::ExposeSecret;
 use stand_control_bot::{
     bot::build_tg_bot,
     configuration::get_config,
@@ -56,13 +57,24 @@ async fn main() -> Result<(), anyhow::Error> {
     let registry = Registry::new(&settings.database).await?;
     let notifier = Notifier::new(registry.clone(), TgBotAdapter::new(bot.clone()));
 
-    let (conn, ldap) =
+    let (ldap_conn, ldap) =
         LdapConnAsync::with_settings(settings.ldap.clone().into(), &settings.ldap.url).await?;
+    let ldap_conn_task = drive!(ldap_conn);
+    let (authorized_ldap_conn, mut authorized_ldap) =
+        LdapConnAsync::with_settings(settings.ldap.clone().into(), &settings.ldap.url).await?;
+    let authorized_ldap_conn_task = drive!(authorized_ldap_conn);
+    authorized_ldap
+        .simple_bind(&settings.ldap.login, settings.ldap.password.expose_secret())
+        .await?
+        .success()?;
 
-    let conn_task = drive!(conn);
-
-    let server =
-        Application::build(&settings, ldap, format!("https://t.me/{bot_username}")).await?;
+    let server = Application::build(
+        &settings,
+        ldap,
+        authorized_ldap,
+        format!("https://t.me/{bot_username}"),
+    )
+    .await?;
 
     let mut dispatcher = build_tg_bot(bot, UsersService::new(registry.clone()));
 
@@ -70,8 +82,11 @@ async fn main() -> Result<(), anyhow::Error> {
         _ = server.serve_forever() => {
             info!("Server exited")
         }
-        _ = conn_task => {
+        _ = ldap_conn_task => {
             info!("Ldap connection exited")
+        }
+        _ = authorized_ldap_conn_task => {
+            info!("Authorized ldap connection exited")
         }
         _ = hosts_release_timer(registry, notifier) => {
             info!("Hosts release timer exited")
