@@ -16,3 +16,7 @@ require_ssl = false
 url = "ldap://your-ldap.addr"
 use_tls = false
 no_tls_verify = true
+
+login = ""
+password = ""
+users_query = ""

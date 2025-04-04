@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT * FROM lease_limits_by_ad_group lg WHERE lg.group = ANY($1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "group",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "limit",
+        "type_info": "Int2"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "TextArray"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "4e12f7a0bbd4bf8c9d8a09b8b45f8921a353fe576e6b583e3dfde04596ea3d2f"
+}

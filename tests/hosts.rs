@@ -16,7 +16,7 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
     let user = gen.generate_user().await;
 
     let leased = hosts_service
-        .lease(&user.id, &[leased_host.id], TimeDelta::seconds(42))
+        .lease(&user.id, &vec![], &[leased_host.id], TimeDelta::seconds(42))
         .await
         .unwrap();
 
@@ -36,12 +36,12 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
 async fn leasing_random_host_leases_one_host() {
     let (mut gen, hosts_service) = create_service().await;
     let group = gen.generate_group().await;
-    let host1 = gen.generate_host().await;
-    let host2 = gen.generate_host().await;
+    let host1 = gen.generate_host_in_group(&group.id).await;
+    let host2 = gen.generate_host_in_group(&group.id).await;
     let user = gen.generate_user().await;
 
     let leased = hosts_service
-        .lease_random(&user.id, TimeDelta::seconds(42), &group.id)
+        .lease_random(&user.id, &vec![], TimeDelta::seconds(42), &group.id)
         .await
         .unwrap();
 
@@ -52,18 +52,23 @@ async fn leasing_random_host_leases_one_host() {
 async fn leasing_multiple_hosts() {
     let (mut gen, service) = create_service().await;
     let group = gen.generate_group().await;
-    let host1 = gen.generate_host().await;
-    let host2 = gen.generate_host().await;
-    let host3 = gen.generate_host().await;
+    let host1 = gen.generate_host_in_group(&group.id).await;
+    let host2 = gen.generate_host_in_group(&group.id).await;
+    let host3 = gen.generate_host_in_group(&group.id).await;
     let user = gen.generate_user().await;
 
     service
-        .lease(&user.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .lease(
+            &user.id,
+            &vec![],
+            &[host1.id, host2.id],
+            TimeDelta::seconds(42),
+        )
         .await
         .unwrap();
 
     service
-        .lease_random(&user.id, TimeDelta::seconds(42), &group.id)
+        .lease_random(&user.id, &vec![], TimeDelta::seconds(42), &group.id)
         .await
         .unwrap();
 
@@ -89,7 +94,7 @@ async fn freeing_host_makes_it_available_for_lease() {
     assert_eq!(available.len(), 2);
 
     service
-        .lease(&user.id, &[host1.id], TimeDelta::seconds(42))
+        .lease(&user.id, &vec![], &[host1.id], TimeDelta::seconds(42))
         .await
         .unwrap();
 
@@ -117,12 +122,17 @@ async fn free_all_frees_hosts_only_for_one_user() {
     let user2 = gen.generate_user().await;
 
     service
-        .lease(&user1.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .lease(
+            &user1.id,
+            &vec![],
+            &[host1.id, host2.id],
+            TimeDelta::seconds(42),
+        )
         .await
         .unwrap();
 
     service
-        .lease(&user2.id, &[host3.id], TimeDelta::seconds(42))
+        .lease(&user2.id, &vec![], &[host3.id], TimeDelta::seconds(42))
         .await
         .unwrap();
 
@@ -185,6 +195,7 @@ async fn lease_limit() {
     match service
         .lease(
             &user.id,
+            &vec![],
             &[host1.id, host2.id, host3.id],
             TimeDelta::seconds(42),
         )
@@ -198,13 +209,18 @@ async fn lease_limit() {
     };
 
     service
-        .lease(&user.id, &[host1.id], TimeDelta::seconds(42))
+        .lease(&user.id, &vec![], &[host1.id], TimeDelta::seconds(42))
         .await
         .unwrap();
 
     // leasing 2 will go over the limit
     match service
-        .lease(&user.id, &[host2.id, host3.id], TimeDelta::seconds(42))
+        .lease(
+            &user.id,
+            &vec![],
+            &[host2.id, host3.id],
+            TimeDelta::seconds(42),
+        )
         .await
     {
         Ok(_) => panic!("Didn't error on lease limit"),
@@ -216,7 +232,12 @@ async fn lease_limit() {
 
     // leasing 2, but one of them is already leased
     match service
-        .lease(&user.id, &[host1.id, host2.id], TimeDelta::seconds(42))
+        .lease(
+            &user.id,
+            &vec![],
+            &[host1.id, host2.id],
+            TimeDelta::seconds(42),
+        )
         .await
     {
         Ok(_) => panic!("Didn't error on lease limit"),
@@ -227,13 +248,13 @@ async fn lease_limit() {
     };
 
     service
-        .lease(&user.id, &[host2.id], TimeDelta::seconds(42))
+        .lease(&user.id, &vec![], &[host2.id], TimeDelta::seconds(42))
         .await
         .unwrap();
 
     // leasing random when at limit
     match service
-        .lease_random(&user.id, TimeDelta::seconds(42), &group.id)
+        .lease_random(&user.id, &vec![], TimeDelta::seconds(42), &group.id)
         .await
     {
         Ok(_) => panic!("Didn't error on lease limit"),

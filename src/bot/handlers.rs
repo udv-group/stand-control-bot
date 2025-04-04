@@ -55,7 +55,7 @@ async fn main_state_handler(bot: Bot, msg: Message, users_service: UsersService)
         Some(user) => {
             bot.send_message(
                 msg.chat.id,
-                format!("Telegram successfully linked for user '{}'", user.login),
+                format!("Telegram successfully linked for user '{}'", user.email),
             )
             .await?;
         }

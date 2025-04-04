@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use chrono::Utc;
 use thiserror::Error;
 
+use crate::db::RegistryTx;
 use crate::db::{
     models::{GroupId, Host, HostId, LeasedHost, UserId},
     Registry,
@@ -13,11 +14,17 @@ pub enum HostError {
     #[error("Database error")]
     DatabaseError(#[from] sqlx::Error),
 
+    #[error("There is no free hosts")]
+    ThereIsNoFreeHosts,
+
     #[error("Host is already leased")]
     AlreadyLeased(Vec<HostId>),
 
     #[error("Hosts lease limit is reached")]
     LeaseLimit,
+
+    #[error("Unexpected error")]
+    UnexpectedError(#[from] anyhow::Error),
 }
 
 #[derive(Clone)]
@@ -69,6 +76,7 @@ impl HostsService {
     pub async fn lease(
         &self,
         user_id: &UserId,
+        user_groups: &Vec<String>,
         hosts_ids: &[HostId],
         lease_for: chrono::TimeDelta,
     ) -> Result<Vec<LeasedHost>, HostError> {
@@ -90,7 +98,8 @@ impl HostsService {
             ));
         }
 
-        if leased.len() + hosts_ids_set.len() > self.lease_limit {
+        let lease_limit = self.get_lease_limit(&mut tx, user_groups).await?;
+        if leased.len() + hosts_ids_set.len() > lease_limit {
             return Err(HostError::LeaseLimit);
         };
 
@@ -121,19 +130,39 @@ impl HostsService {
     pub async fn lease_random(
         &self,
         user_id: &UserId,
+        user_groups: &Vec<String>,
         lease_for: chrono::TimeDelta,
         group_id: &GroupId,
     ) -> Result<LeasedHost, HostError> {
         let mut tx = self.registry.begin().await?;
-        if tx.get_leased_hosts(user_id).await?.len() >= self.lease_limit {
+        let lease_limit = self.get_lease_limit(&mut tx, user_groups).await?;
+
+        if tx.get_leased_hosts(user_id).await?.len() >= lease_limit {
             return Err(HostError::LeaseLimit);
         };
-        let host = tx.get_first_available_group_host(group_id).await?;
-        tx.lease_hosts(user_id, &[host.id], Utc::now() + lease_for)
-            .await?;
-        let leased = tx.get_leased_hosts(user_id).await?.into_iter().next();
-        tx.commit().await?;
-        // TODO: dont unwrap, make another error type
-        Ok(leased.unwrap())
+        if let Some(host) = tx.get_first_available_group_host(group_id).await? {
+            tx.lease_hosts(user_id, &[host.id], Utc::now() + lease_for)
+                .await?;
+            let leased = tx.get_leased_host(&host.id).await?;
+            tx.commit().await?;
+
+            return Ok(leased);
+        }
+        Err(HostError::ThereIsNoFreeHosts)
+    }
+
+    pub async fn get_lease_limit(
+        &self,
+        tx: &mut RegistryTx<'_>,
+        groups: &Vec<String>,
+    ) -> anyhow::Result<usize> {
+        let groups_limits = tx.get_ad_groups_lease_limits(groups).await?;
+        let limit = groups_limits
+            .into_iter()
+            .map(|gl| gl.limit.try_into().unwrap())
+            .max()
+            .unwrap_or(self.lease_limit);
+
+        Ok(limit)
     }
 }

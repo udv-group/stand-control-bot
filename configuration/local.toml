@@ -1,6 +1,5 @@
 [app]
 host = "127.0.0.1"
-base_url = "http://127.0.0.1"
 hmac_secret = "this-is-a-very-long-secret-string!"
 
 [database]

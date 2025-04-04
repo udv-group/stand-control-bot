@@ -26,6 +26,12 @@
             <p class="text-sm/6 font-medium"> Telegram linked: {{user.tg_linked}} </p>
             <p class="text-sm/6 font-medium">To link your account send code
                 "{{user.link}}" to the <a class="text-blue-600 visited:text-purple-600" href="{{auth_link}}" target="_blank">{{auth_link}}</a></p>
+            <fieldset class="space-y-1">
+                <p class="text-base/7 font-semibold">Groups:</p>
+                {% for group in user.groups %}
+                <p class="text-sm/6 font-medium"> - "{{group}}" </p>
+                {% endfor %}
+            </fieldset>
             <br>
             <button id="account-dialog-close"
                 class="inline-flex items-center gap-2 rounded-md bg-gray-300 dark:bg-gray-700 py-1.5 px-3 text-sm/6 font-semibold shadow-inner shadow-white/10"
