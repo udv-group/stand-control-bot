@@ -53,6 +53,7 @@ pub struct Application {
 impl Application {
     pub async fn build(
         settings: &Settings,
+        registry: Registry,
         ldap: ldap3::Ldap,
         authorized_ldap: ldap3::Ldap,
         auth_link: String,
@@ -68,8 +69,6 @@ impl Application {
         let session_layer = SessionManagerLayer::new(MemoryStore::default())
             .with_secure(true)
             .with_expiry(Expiry::OnInactivity(Duration::days(7)));
-
-        let registry = Registry::new(&settings.database).await?;
 
         let users_info =
             UsersInfo::new(ldap, authorized_ldap, settings.ldap.users_query.clone()).await?;

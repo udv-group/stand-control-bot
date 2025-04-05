@@ -9,9 +9,12 @@ use serde::Deserialize;
 use tracing::error;
 use tracing::warn;
 
-use crate::web::{
-    auth::middleware::{AuthSession, Credentials},
-    flash_redirect,
+use crate::{
+    web::{
+        auth::middleware::{AuthSession, Credentials},
+        flash_redirect,
+    },
+    AppInfo,
 };
 
 #[derive(Deserialize)]
@@ -67,11 +70,18 @@ pub async fn logout(mut session: AuthSession) -> axum::response::Result<Redirect
 #[template(path = "login.html", escape = "none")]
 struct LoginPage {
     error: Option<String>,
+    app_info: AppInfo,
 }
 
 #[tracing::instrument(skip_all)]
 pub async fn login_page(flashes: IncomingFlashes) -> Response {
     let error = flashes.into_iter().next().map(|(_, text)| text.to_string());
-    let resp = Html(LoginPage { error }.to_string());
+    let resp = Html(
+        LoginPage {
+            error,
+            app_info: AppInfo::new(),
+        }
+        .to_string(),
+    );
     (flashes, resp).into_response()
 }

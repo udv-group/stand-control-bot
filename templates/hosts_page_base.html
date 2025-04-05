@@ -17,6 +17,7 @@
         </nav>
     </header>
     {{page}}
+    <div class="fixed bottom-0 left-0 right-0 mx-auto w-fit text-gray-400 dark:text-gray-600">Version: {{ app_info.version }}</div>
 </div>
 <dialog id="account-dialog">
     <div class="bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-200">
@@ -40,7 +41,7 @@
     </div>
 </dialog>
 <script>
-    const accountDialog = document.getElementById("account-dialog");
+    var accountDialog = document.getElementById("account-dialog");
     document.getElementById("account-dialog-open").addEventListener("click", () => {
         accountDialog.showModal();
     });

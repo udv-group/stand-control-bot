@@ -21,6 +21,7 @@ config = { version = "^0.15" }
 dotenv = "0.15.0"
 hyper = "1.6.0"
 ipnetwork = "0.20.0"
+itertools = "0.14.0"
 ldap3 = "^0.11"
 secrecy = { version = "0.8", features = ["serde"] }
 serde = { version = "1.0.197", features = ["derive"] }

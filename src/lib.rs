@@ -8,6 +8,19 @@ pub mod logic;
 pub mod telemetry;
 pub mod web;
 
+#[derive(Debug)]
+pub struct AppInfo {
+    pub version: String,
+}
+
+impl AppInfo {
+    fn new() -> Self {
+        Self {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+        }
+    }
+}
+
 pub fn set_env() {
     let env_file = Path::new(".env");
     if env_file.exists() {

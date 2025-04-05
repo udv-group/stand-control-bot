@@ -13,12 +13,12 @@ use std::{collections::HashMap, ops::Deref};
 use serde::Deserialize;
 
 use super::templates::{AllHostsPage, HostInfo, HostsLeasePage, HostsPage};
-use crate::logic::users::UsersService;
 use crate::{db::models::UserId, logic::hosts::HostsService};
 use crate::{
     db::models::{GroupId, HostId, User as UserDb},
     logic::groups::GroupsService,
 };
+use crate::{logic::users::UsersService, AppInfo};
 
 use super::auth::middleware::User;
 use super::{flash_redirect, AuthLink};
@@ -72,6 +72,7 @@ pub async fn get_hosts(
         user: user.into(),
         auth_link,
         page: lease_page,
+        app_info: AppInfo::new(),
     };
 
     (
@@ -108,6 +109,7 @@ pub async fn get_all_hosts(
         user: user.into(),
         auth_link,
         page: lease_page,
+        app_info: AppInfo::new(),
     };
 
     Html(page.render().unwrap())

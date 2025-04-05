@@ -1,10 +1,9 @@
-use std::future::Future;
-
 use anyhow::{Context, Ok, Result};
+use axum::async_trait;
 use chrono::Utc;
 
 use crate::db::{
-    models::{HostId, UserId},
+    models::{HostId, User, UserId},
     Registry,
 };
 
@@ -14,23 +13,28 @@ pub enum Notification {
     ExpirationSoon(Vec<HostId>),
 }
 
-pub trait BotAdapter {
-    fn send_message(&self, user_id: i64, msg: String) -> impl Future<Output = Result<()>> + Send;
+#[async_trait]
+pub trait SendMessage {
+    async fn send_message(&self, msg: String) -> Result<()>;
 }
 
-pub struct Notifier<T: BotAdapter> {
+pub trait GetMessageSender {
+    fn get_message_sender(&self, user: &User) -> Result<Box<dyn SendMessage>>;
+}
+
+pub struct Notifier<T> {
     registry: Registry,
-    tg_adapter: T,
+    msg_sender: T,
 }
 
 impl<T> Notifier<T>
 where
-    T: BotAdapter,
+    T: GetMessageSender,
 {
-    pub fn new(registry: Registry, tg_adapter: T) -> Self {
+    pub fn new(registry: Registry, msg_sender: T) -> Self {
         Self {
             registry,
-            tg_adapter,
+            msg_sender,
         }
     }
 
@@ -41,13 +45,13 @@ where
             .await
             .with_context(|| "Failed to begin transaction")?;
 
-        let tg_handle = tx
+        let user = tx
             .get_user_by_id(&user_id)
             .await
             .with_context(|| format!("Failed to read user {:?}", user_id))?
-            .with_context(|| format!("User ({:?}) doesn't exist", user_id))?
-            .tg_handle
-            .with_context(|| format!("User ({:?}) tg_handle is None", user_id))?;
+            .with_context(|| format!("User ({:?}) doesn't exist", user_id))?;
+
+        let msg_sender = self.msg_sender.get_message_sender(&user)?;
 
         let msg = match notification {
             Notification::HostsReleased(hosts_ids) => {
@@ -90,14 +94,7 @@ where
             }
         };
 
-        self.tg_adapter
-            .send_message(
-                tg_handle
-                    .parse()
-                    .with_context(|| format!("Failed parse chat_id from {}", tg_handle))?,
-                msg,
-            )
-            .await?;
+        msg_sender.send_message(msg).await?;
 
         Ok(())
     }
