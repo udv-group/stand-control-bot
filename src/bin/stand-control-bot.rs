@@ -6,8 +6,7 @@ use stand_control_bot::{
     configuration::get_config,
     db::{run_migrations, Registry},
     logic::{
-        notifications::{BotAdapter, Notifier},
-        release::hosts_release_timer,
+        message_senders::TgMessages, notifications::Notifier, release::hosts_release_timer,
         users::UsersService,
     },
     set_env,
@@ -15,28 +14,11 @@ use stand_control_bot::{
 };
 
 use ldap3::drive;
-use teloxide::{requests::Requester, types::ChatId, Bot};
+use teloxide::{requests::Requester, Bot};
 use tokio::select;
 use tracing::info;
 
 use stand_control_bot::telemetry::init_tracing;
-
-struct TgBotAdapter {
-    bot: Bot,
-}
-
-impl TgBotAdapter {
-    fn new(bot: Bot) -> Self {
-        TgBotAdapter { bot }
-    }
-}
-
-impl BotAdapter for TgBotAdapter {
-    async fn send_message(&self, user_id: i64, msg: String) -> anyhow::Result<()> {
-        self.bot.send_message(ChatId(user_id), msg).await?;
-        Ok(())
-    }
-}
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -54,11 +36,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .user
         .username
         .with_context(|| "Bot hasn't username?!")?;
+
     let registry = Registry::new(&settings.database).await?;
-    let notifier = Some(Notifier::new(
-        registry.clone(),
-        TgBotAdapter::new(bot.clone()),
-    ));
+    let notifier = Notifier::new(registry.clone(), TgMessages::new(bot.clone()));
 
     let (ldap_conn, ldap) =
         LdapConnAsync::with_settings(settings.ldap.clone().into(), &settings.ldap.url).await?;

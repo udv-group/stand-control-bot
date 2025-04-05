@@ -13,14 +13,11 @@ use crate::db::{
 };
 use anyhow::Result;
 
-use super::notifications::{BotAdapter, Notification, Notifier};
+use super::notifications::{GetMessageSender, Notification, Notifier};
 use itertools::Itertools;
 use tracing::{debug, error};
 
-pub async fn hosts_release_timer<T: BotAdapter>(
-    registry: Registry,
-    notifier: &Option<Notifier<T>>,
-) {
+pub async fn hosts_release_timer<T: GetMessageSender>(registry: Registry, notifier: &Notifier<T>) {
     let mut release_timer = ReleaseTimer {
         registry,
         last_expiration_soon_notification: HashMap::new(),
@@ -36,23 +33,19 @@ pub async fn hosts_release_timer<T: BotAdapter>(
                         .map(|h| h.id.clone().to_string())
                         .join(", ")
                 );
-                if let Some(notif) = notifier {
-                    if let Err(err) = release_timer
-                        .notify_released_hosts(notif, &released_hosts)
-                        .await
-                    {
-                        error!("Failed released hosts notification: {}", err);
-                    };
-                }
+                if let Err(err) = release_timer
+                    .notify_released_hosts(notifier, &released_hosts)
+                    .await
+                {
+                    error!("Failed released hosts notification: {}", err);
+                };
             }
             Ok(_) => {}
             Err(err) => error!("Release fail: {err}"),
         };
 
-        if let Some(notif) = notifier {
-            if let Err(err) = release_timer.notify_soon_release(notif).await {
-                error!("Notify soon release fail: {err}")
-            }
+        if let Err(err) = release_timer.notify_soon_release(notifier).await {
+            error!("Notify soon release fail: {err}");
         }
         sleep(Duration::from_secs(10)).await;
     }
@@ -83,7 +76,7 @@ impl ReleaseTimer {
         Ok(expired_hosts)
     }
 
-    async fn notify_released_hosts<T: BotAdapter>(
+    async fn notify_released_hosts<T: GetMessageSender>(
         &mut self,
         notifier: &Notifier<T>,
         released_hosts: &[LeasedHost],
@@ -110,7 +103,10 @@ impl ReleaseTimer {
         Ok(())
     }
 
-    async fn notify_soon_release<T: BotAdapter>(&mut self, notifier: &Notifier<T>) -> Result<()> {
+    async fn notify_soon_release<T: GetMessageSender>(
+        &mut self,
+        notifier: &Notifier<T>,
+    ) -> Result<()> {
         let mut tx = self.registry.begin().await?;
 
         let next_expiration_date = Utc::now() + self.expiration_notify_delay_time;
