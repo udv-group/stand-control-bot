@@ -3,7 +3,10 @@ use chrono::{DateTime, TimeDelta, Utc};
 
 use serde::{Deserialize, Serialize};
 
-use crate::db::models::{Group, GroupId, Host, HostId, LeasedHost, User as UserDb};
+use crate::{
+    db::models::{Group, GroupId, Host, HostId, LeasedHost, User as UserDb},
+    AppInfo,
+};
 
 use super::auth::middleware::User;
 
@@ -13,6 +16,7 @@ pub struct HostsPage<T: Template> {
     pub page: T,
     pub user: UserInfo,
     pub auth_link: String,
+    pub app_info: AppInfo,
 }
 
 #[derive(Template, Debug)]
