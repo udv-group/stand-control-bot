@@ -32,7 +32,6 @@ use tower_http::trace::TraceLayer;
 use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, SessionManagerLayer};
 use tracing::info;
 use uuid::Uuid;
-
 #[derive(FromRef, Clone)]
 struct AppState {
     hosts_service: HostsService,
@@ -78,6 +77,28 @@ impl Application {
         )
         .build();
 
+        let assets_router = Router::new()
+            .route(
+                "/assets/htmx.min.js",
+                get(|| async {
+                    (
+                        [(axum::http::header::CONTENT_TYPE, "text/javascript")],
+                        include_bytes!("../../assets/htmx.min.js"),
+                    )
+                        .into_response()
+                }),
+            )
+            .route(
+                "/assets/tailwindcss.css",
+                get(|| async {
+                    (
+                        [(axum::http::header::CONTENT_TYPE, "text/css")],
+                        include_bytes!("../../assets/tailwindcss.css"),
+                    )
+                        .into_response()
+                }),
+            );
+
         let authed_router = Router::new()
             .route("/logout", get(login::logout))
             .route("/hosts", get(hosts::get_hosts))
@@ -90,6 +111,7 @@ impl Application {
         let app = Router::new()
             .route("/login", post(login::login).get(login::login_page))
             .route("/hosts/leased", get(hosts::get_hosts_json))
+            .merge(assets_router)
             .merge(authed_router.route_layer(middleware::from_fn(auth_middleware)))
             .fallback(|| async { Redirect::to("/hosts").into_response() })
             .layer(auth_layer)
