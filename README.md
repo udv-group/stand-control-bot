@@ -39,6 +39,7 @@ Prerequisites:
 - Postgres (>=13)
 - [sqlx-cli](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md)
 - LDAP server
+- [NPM](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 
 To initialize the database and run migrations use [init_db.sh](scripts/init_db.sh) script. 
 If you don't have podman or running a native server you can skip the initialization stage with `SKIP_START=true` environment variable to just run migrations.
@@ -57,3 +58,15 @@ It is preferable to use a real AD server to run auth tests since auth is designe
 work with AD specifically.
 
 It is possible to use LDAP-server instead, though you will have to use fully qualified names as logins.
+
+
+### Tailwind
+
+To update css file
+
+```bash
+> npm install
+> just build-css
+```
+
+Source of tailwind styles located here - [src](./tailwind_src/)

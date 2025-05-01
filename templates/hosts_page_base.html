@@ -19,9 +19,9 @@
     {{page}}
     <div class="fixed bottom-0 left-0 right-0 mx-auto w-fit text-gray-400 dark:text-gray-600">Version: {{ app_info.version }}</div>
 </div>
-<dialog id="account-dialog">
+<dialog id="account-dialog" style="margin: revert;" class="rounded-xl bg-black/5 dark:bg-white/5">
     <div class="bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-200">
-        <fieldset class="space-y-6 rounded-xl bg-black/5 dark:bg-white/5 p-6 sm:p-10">
+        <fieldset class="space-y-6 p-6 sm:p-10">
             <p class="text-base/7 font-semibold">Account</p>
             <p class="text-sm/6 font-medium"> Login: {{user.login}} </p>
             <p class="text-sm/6 font-medium"> Telegram linked: {{user.tg_linked}} </p>

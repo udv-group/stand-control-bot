@@ -4,3 +4,5 @@ Cargo.lock
 !.gitignore
 !.sqlx
 !.github
+node_modules
+

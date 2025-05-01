@@ -6,3 +6,6 @@ check:
     cargo check
     cargo fmt --check
     cargo clippy -- -D warnings
+
+build-css:
+    npm run build:css
