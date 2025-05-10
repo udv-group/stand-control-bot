@@ -1,0 +1,44 @@
+# The root config entry
+dn: cn=config
+objectClass: olcGlobal
+cn: config
+olcArgsFile: .ldap/run/slapd.args
+olcPidFile: .ldap/run/slapd.pid
+
+# Schemas
+dn: cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: schema
+
+include: file:///etc/openldap/schema/core.ldif
+
+# The config database
+dn: olcDatabase=config,cn=config
+objectClass: olcDatabaseConfig
+olcDatabase: config
+olcRootDN: cn=Manager,dc=example,dc=org
+
+# The database for our entries
+dn: olcDatabase=mdb,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcMdbConfig
+olcDatabase: mdb
+olcSuffix: dc=example,dc=org
+olcRootDN: cn=Manager,dc=example,dc=org
+olcRootPW: test
+olcDbDirectory: .ldap/db
+olcDbIndex: objectClass eq
+olcDbIndex: uid pres,eq
+olcDbIndex: mail pres,sub,eq
+olcDbIndex: cn,sn pres,sub,eq
+olcDbIndex: dc eq
+
+# Additional schemas
+# RFC1274: Cosine and Internet X.500 schema
+include: file:///etc/openldap/schema/cosine.ldif
+# RFC2307: An Approach for Using LDAP as a Network Information Service
+# Check RFC2307bis for nested groups and an auxiliary posixGroup objectClass (way easier)
+include: file:///etc/openldap/schema/nis.ldif
+# RFC2798: Internet Organizational Person
+include: file:///etc/openldap/schema/inetorgperson.ldif
+
