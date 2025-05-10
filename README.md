@@ -40,13 +40,13 @@ Prerequisites:
 - Up to date Rust compiler ([rustup](https://www.rust-lang.org/tools/install) is strongly recommended)
 - Postgres (>=13)
 - [sqlx-cli](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md)
-- LDAP server
+- LDAP server (slapd)
 - [NPM](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)
 
 To initialize the database and run migrations use [init_db.sh](scripts/init_db.sh) script. 
 If you don't have podman or running a native server you can skip the initialization stage with `SKIP_START=true` environment variable to just run migrations.
 
-To set up a local LDAP server consult [ldap3 repo](https://github.com/inejge/ldap3/tree/00a513ece4ffa9a9782860c285f4c4c12bc07552/data). If run as is, authentication with empty credentials is possible.
+For LDAP you'll need `slapd` and `ldap-utils`. To set up the database run `just ldap-setup`. After it finishes run `just ldap-start` to start `slapd`.
 
 To allow sqlx to connect to your development database create `.env` file in the root of this repository with a line 
 ```
@@ -56,11 +56,11 @@ Replace `localhost:5432` with the address and port of your postgres server
 
 ### Notes about LDAP/AD server
 
-It is preferable to use a real AD server to run auth tests since auth is designed to
-work with AD specifically.
+Setup is a bit cursed, info mainly pulled from [Arch docs](https://wiki.archlinux.org/title/OpenLDAP#The_server)
+and [this article](https://www.adimian.com/blog/how-to-enable-memberof-using-openldap/).
 
-It is possible to use LDAP-server instead, though you will have to use fully qualified names as logins.
-
+To add users/groups or change credentials edit [user.ldif](tests/ldap-setup/user.ldif). To change credentials modify `userPassword` and `mail`.
+Don't forget to run `just ldap-clean` and `just ldap-setup` to apply your changes.
 
 ### Tailwind
 

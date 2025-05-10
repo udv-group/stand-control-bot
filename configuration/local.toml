@@ -9,3 +9,7 @@ require_ssl = false
 url = "ldap://localhost:2389"
 use_tls = false
 no_tls_verify = true
+
+login = "cn=Manager,dc=example,dc=org"
+password = "test"
+users_query = "dc=example,dc=org"

@@ -1,0 +1,26 @@
+# example.org
+dn: dc=example,dc=org
+dc: example
+o: Example Organization
+objectClass: dcObject
+objectClass: organization
+
+# Manager, example.org
+dn: cn=Manager,dc=example,dc=org
+cn: Manager
+description: LDAP administrator
+objectClass: organizationalRole
+objectClass: top
+roleOccupant: dc=example,dc=org
+
+# People, example.org
+dn: ou=People,dc=example,dc=org
+ou: People
+objectClass: top
+objectClass: organizationalUnit
+
+# Groups, example.org
+dn: ou=Group,dc=example,dc=org
+ou: Group
+objectClass: top
+objectClass: organizationalUnit

@@ -17,6 +17,9 @@ url = "ldap://your-ldap.addr"
 use_tls = false
 no_tls_verify = true
 
+# ldap account to authenticate tachikoma
 login = ""
 password = ""
+# part of subtree were users are going to be queried
+# consult local.toml for an example
 users_query = ""
