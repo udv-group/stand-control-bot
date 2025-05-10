@@ -1,26 +1,26 @@
 use askama::Template;
 use axum::{
-    response::{Html, IntoResponse, Redirect, Response},
     Form,
+    response::{Html, IntoResponse, Redirect, Response},
 };
 use axum_flash::{Flash, IncomingFlashes};
-use secrecy::Secret;
+use secrecy::SecretString;
 use serde::Deserialize;
 use tracing::error;
 use tracing::warn;
 
 use crate::{
+    AppInfo,
     web::{
         auth::middleware::{AuthSession, Credentials},
         flash_redirect,
     },
-    AppInfo,
 };
 
 #[derive(Deserialize)]
 pub struct FormData {
     username: String,
-    password: Secret<String>,
+    password: SecretString,
 }
 
 #[tracing::instrument(

@@ -1,8 +1,8 @@
 use askama::Template;
 use axum::{
+    Extension,
     extract::{Query, State},
     response::{Html, IntoResponse, Json, Redirect},
-    Extension,
 };
 use axum_extra::extract::{CookieJar, Form, OptionalQuery};
 use axum_flash::{Flash, IncomingFlashes};
@@ -13,15 +13,15 @@ use std::{collections::HashMap, ops::Deref};
 use serde::Deserialize;
 
 use super::templates::{AllHostsPage, HostInfo, HostsLeasePage, HostsPage};
+use crate::{AppInfo, logic::users::UsersService};
 use crate::{db::models::UserId, logic::hosts::HostsService};
 use crate::{
     db::models::{GroupId, HostId, User as UserDb},
     logic::groups::GroupsService,
 };
-use crate::{logic::users::UsersService, AppInfo};
 
 use super::auth::middleware::User;
-use super::{flash_redirect, AuthLink};
+use super::{AuthLink, flash_redirect};
 use axum_extra::extract::cookie::Cookie;
 #[derive(Deserialize)]
 pub struct HostsParams {

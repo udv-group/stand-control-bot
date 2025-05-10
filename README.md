@@ -1,10 +1,12 @@
-# STAND-CONTROL-BOT
+# TACHIKOMA
 
 Simple and opinionated web server to facilitate the reuse of development servers and infrastructure. 
 
+Named after adorable robots from [Ghost in the Shell](https://en.wikipedia.org/wiki/Tachikoma)
+
 # Deployment
 
-[Releases](https://github.com/udv-group/stand-control-bot/releases) page has two prebuild binaries for Linux: `stand-control-bot` which includes telegram integration and `sever` which just runs a web server.
+[Releases](https://github.com/udv-group/tachikoma/releases) page has two prebuild binaries for Linux: `tachikama` which includes telegram integration and `sever` which just runs a web server.
 
 App is expected to be deployed in the private network. It is recommended to use a reverse proxy (like Nginx) to enable TLS and Docker to run a web server. For integration with telegram also network access
 to telegram servers is required.
@@ -17,7 +19,7 @@ Web server is using LDAP to manage auth and is designed to be used with AD serve
 
 `APP_ENVIRONMENT` - what environment app is running in. Possible values are `local` (default) and `production`. Affects configuration lookup.
 
-`CONFIG_DIR` - path to directory with configuration files, default is `/etc/stand-control-bot` for `production` environment.
+`CONFIG_DIR` - path to directory with configuration files, default is `/etc/tachikoma` for `production` environment.
 
 `INCLUDE_SPAN_EVENTS` - flag to include span events in log output, making it much more verbose. Possible values are `true` and `false` (default).
 
@@ -48,7 +50,7 @@ To set up a local LDAP server consult [ldap3 repo](https://github.com/inejge/lda
 
 To allow sqlx to connect to your development database create `.env` file in the root of this repository with a line 
 ```
-DATABASE_URL=postgres://postgres:password@localhost:5432/stand_control_bot
+DATABASE_URL=postgres://postgres:password@localhost:5432/tachikoma
 ```
 Replace `localhost:5432` with the address and port of your postgres server
 

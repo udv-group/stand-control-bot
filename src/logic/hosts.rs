@@ -5,8 +5,8 @@ use thiserror::Error;
 
 use crate::db::RegistryTx;
 use crate::db::{
-    models::{GroupId, Host, HostId, LeasedHost, UserId},
     Registry,
+    models::{GroupId, Host, HostId, LeasedHost, UserId},
 };
 
 #[derive(Error, Debug)]

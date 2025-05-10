@@ -1,8 +1,8 @@
-pub mod gen;
+pub mod generator;
 pub mod registry;
 
 use sqlx::{Executor, PgPool};
-use stand_control_bot::configuration::{get_config, DatabaseSettings, Settings};
+use tachikoma::configuration::{DatabaseSettings, Settings, get_config};
 
 use uuid::Uuid;
 

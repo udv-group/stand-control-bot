@@ -1,6 +1,6 @@
 use tracing_subscriber::fmt::format::FmtSpan;
 use tracing_subscriber::prelude::*;
-use tracing_subscriber::{fmt, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt};
 
 pub fn init_tracing() {
     let mut fmt_layer = fmt::layer();

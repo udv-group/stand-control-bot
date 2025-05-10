@@ -1,9 +1,9 @@
 use std::{fmt::Display, ops::Deref, str::FromStr};
 
 use chrono::prelude::*;
-use ipnetwork::IpNetwork;
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::FromRow;
+use sqlx::types::ipnetwork::IpNetwork;
 
 #[derive(sqlx::Type, Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[sqlx(transparent)]

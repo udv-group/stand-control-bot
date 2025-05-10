@@ -1,9 +1,8 @@
 use ldap3::Ldap;
 use ldap3::{ResultEntry, SearchEntry};
-use secrecy::ExposeSecret;
-use secrecy::Secret;
+use secrecy::{ExposeSecret, SecretString};
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 #[derive(Clone)]
 pub struct UsersInfo {
@@ -112,11 +111,7 @@ impl UsersInfo {
         Ok(None)
     }
 
-    pub async fn check_authentication(
-        &self,
-        user_dn: &str,
-        password: &Secret<String>,
-    ) -> Result<()> {
+    pub async fn check_authentication(&self, user_dn: &str, password: &SecretString) -> Result<()> {
         if password.expose_secret().is_empty() {
             return Err(anyhow!("Empty password"));
         };

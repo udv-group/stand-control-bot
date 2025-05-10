@@ -1,13 +1,13 @@
-use stand_control_bot::db::{run_migrations, Registry};
-use stand_control_bot::logic::message_senders::DisabledMessageSender;
-use stand_control_bot::logic::notifications::Notifier;
-use stand_control_bot::{configuration::get_config, set_env, web::Application};
+use tachikoma::db::{Registry, run_migrations};
+use tachikoma::logic::message_senders::DisabledMessageSender;
+use tachikoma::logic::notifications::Notifier;
+use tachikoma::{configuration::get_config, set_env, web::Application};
 use tracing::info;
 
-use ldap3::{drive, LdapConnAsync};
+use ldap3::{LdapConnAsync, drive};
 use secrecy::ExposeSecret;
-use stand_control_bot::logic::release::hosts_release_timer;
-use stand_control_bot::telemetry::init_tracing;
+use tachikoma::logic::release::hosts_release_timer;
+use tachikoma::telemetry::init_tracing;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {

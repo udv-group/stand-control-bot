@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::support::registry::create_registry;
 use async_cell::sync::AsyncCell;
 use axum::async_trait;
-use stand_control_bot::{
+use tachikoma::{
     db::models::User,
     logic::notifications::{GetMessageSender, Notification, Notifier, SendMessage},
 };

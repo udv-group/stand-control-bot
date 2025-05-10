@@ -5,10 +5,10 @@ use crate::logic::users::UsersService;
 
 use std::error::Error;
 use teloxide::{
-    dispatching::{dialogue::InMemStorage, DefaultKey, Dispatcher},
+    Bot,
+    dispatching::{DefaultKey, Dispatcher, dialogue::InMemStorage},
     macros::BotCommands,
     prelude::*,
-    Bot,
 };
 
 #[derive(Clone, Default, Debug)]
@@ -28,7 +28,7 @@ pub fn build_tg_bot(
     bot: Bot,
     users_service: UsersService,
 ) -> Dispatcher<Bot, Box<dyn Error + Send + Sync>, DefaultKey> {
-    tracing::info!("Starting stand-control");
+    tracing::info!("Starting tachikama");
 
     Dispatcher::builder(bot, build_handler())
         .dependencies(dptree::deps![

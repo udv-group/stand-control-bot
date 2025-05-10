@@ -1,12 +1,12 @@
-use crate::db::models::User as DbUser;
 use crate::db::Registry;
+use crate::db::models::User as DbUser;
 use crate::ldap::UsersInfo;
 use anyhow::Context;
 use axum::response::IntoResponse;
 use axum::response::{Redirect, Response};
 use axum::{async_trait, extract::Request, middleware::Next};
 use axum_login::{AuthUser, AuthnBackend, UserId};
-use secrecy::Secret;
+use secrecy::SecretString;
 use tracing::info;
 
 #[derive(Debug, Clone)]
@@ -63,7 +63,7 @@ impl Backend {
 #[derive(Clone)]
 pub struct Credentials {
     pub username: String,
-    pub password: Secret<String>,
+    pub password: SecretString,
 }
 
 #[derive(thiserror::Error, Debug)]

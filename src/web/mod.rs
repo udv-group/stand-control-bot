@@ -3,12 +3,12 @@ mod hosts;
 mod templates;
 
 use axum::{
+    Router,
     body::Body,
     extract::{FromRef, MatchedPath},
     middleware,
     response::{ErrorResponse, IntoResponse, Redirect},
     routing::{get, post},
-    Router,
 };
 
 use axum_extra::extract::cookie::Key;
@@ -20,7 +20,7 @@ use tokio::net::TcpListener;
 
 use self::auth::{
     login,
-    middleware::{auth_middleware, Backend},
+    middleware::{Backend, auth_middleware},
 };
 use crate::ldap::UsersInfo;
 use crate::{
@@ -29,7 +29,7 @@ use crate::{
     logic::{groups::GroupsService, hosts::HostsService, users::UsersService},
 };
 use tower_http::trace::TraceLayer;
-use tower_sessions::{cookie::time::Duration, Expiry, MemoryStore, SessionManagerLayer};
+use tower_sessions::{Expiry, MemoryStore, SessionManagerLayer, cookie::time::Duration};
 use tracing::info;
 use uuid::Uuid;
 #[derive(FromRef, Clone)]

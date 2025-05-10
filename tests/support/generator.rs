@@ -1,11 +1,11 @@
 use std::net::{IpAddr, Ipv4Addr};
 
 use fake::{Fake, Faker};
-use ipnetwork::IpNetwork;
 use sqlx::PgPool;
+use sqlx::types::ipnetwork::IpNetwork;
 
 use rand::Rng;
-use stand_control_bot::db::models::{GroupId, HostId, UserId};
+use tachikoma::db::models::{GroupId, HostId, UserId};
 use uuid::Uuid;
 
 pub struct Generator {
@@ -61,11 +61,11 @@ impl Generator {
         }
     }
     pub async fn generate_user(&mut self) -> MockUser {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let mail = Uuid::new_v4().to_string();
         let dn = mail.clone();
-        let tg_handle = rng.gen::<u32>().to_string();
+        let tg_handle = rng.random::<u32>().to_string();
 
         let row = sqlx::query!(
             "INSERT INTO users (email, tg_handle, dn) VALUES ($1, $2, $3) RETURNING id",

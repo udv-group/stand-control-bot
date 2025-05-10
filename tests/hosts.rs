@@ -3,17 +3,17 @@ pub mod support;
 use std::collections::HashSet;
 
 use chrono::{TimeDelta, Utc};
-use stand_control_bot::{db::models::HostId, logic::hosts::HostError};
 use support::registry::create_service_with_limit;
+use tachikoma::{db::models::HostId, logic::hosts::HostError};
 
 use crate::support::registry::{create_registry, create_service};
 
 #[tokio::test]
 async fn leasing_host_adds_them_to_user_leased_hosts() {
-    let (mut gen, hosts_service) = create_service().await;
-    let leased_host = gen.generate_host().await;
-    let free = gen.generate_host().await;
-    let user = gen.generate_user().await;
+    let (mut generator, hosts_service) = create_service().await;
+    let leased_host = generator.generate_host().await;
+    let free = generator.generate_host().await;
+    let user = generator.generate_user().await;
 
     let leased = hosts_service
         .lease(&user.id, &vec![], &[leased_host.id], TimeDelta::seconds(42))
@@ -34,11 +34,11 @@ async fn leasing_host_adds_them_to_user_leased_hosts() {
 
 #[tokio::test]
 async fn leasing_random_host_leases_one_host() {
-    let (mut gen, hosts_service) = create_service().await;
-    let group = gen.generate_group().await;
-    let host1 = gen.generate_host_in_group(&group.id).await;
-    let host2 = gen.generate_host_in_group(&group.id).await;
-    let user = gen.generate_user().await;
+    let (mut generator, hosts_service) = create_service().await;
+    let group = generator.generate_group().await;
+    let host1 = generator.generate_host_in_group(&group.id).await;
+    let host2 = generator.generate_host_in_group(&group.id).await;
+    let user = generator.generate_user().await;
 
     let leased = hosts_service
         .lease_random(&user.id, &vec![], TimeDelta::seconds(42), &group.id)
@@ -50,12 +50,12 @@ async fn leasing_random_host_leases_one_host() {
 
 #[tokio::test]
 async fn leasing_multiple_hosts() {
-    let (mut gen, service) = create_service().await;
-    let group = gen.generate_group().await;
-    let host1 = gen.generate_host_in_group(&group.id).await;
-    let host2 = gen.generate_host_in_group(&group.id).await;
-    let host3 = gen.generate_host_in_group(&group.id).await;
-    let user = gen.generate_user().await;
+    let (mut generator, service) = create_service().await;
+    let group = generator.generate_group().await;
+    let host1 = generator.generate_host_in_group(&group.id).await;
+    let host2 = generator.generate_host_in_group(&group.id).await;
+    let host3 = generator.generate_host_in_group(&group.id).await;
+    let user = generator.generate_user().await;
 
     service
         .lease(
@@ -85,10 +85,10 @@ async fn leasing_multiple_hosts() {
 
 #[tokio::test]
 async fn freeing_host_makes_it_available_for_lease() {
-    let (mut gen, service) = create_service().await;
-    let host1 = gen.generate_host().await;
-    let host2 = gen.generate_host().await;
-    let user = gen.generate_user().await;
+    let (mut generator, service) = create_service().await;
+    let host1 = generator.generate_host().await;
+    let host2 = generator.generate_host().await;
+    let user = generator.generate_user().await;
 
     let available = service.get_available_hosts().await.unwrap();
     assert_eq!(available.len(), 2);
@@ -114,12 +114,12 @@ async fn freeing_host_makes_it_available_for_lease() {
 
 #[tokio::test]
 async fn free_all_frees_hosts_only_for_one_user() {
-    let (mut gen, service) = create_service().await;
-    let host1 = gen.generate_host().await;
-    let host2 = gen.generate_host().await;
-    let host3 = gen.generate_host().await;
-    let user1 = gen.generate_user().await;
-    let user2 = gen.generate_user().await;
+    let (mut generator, service) = create_service().await;
+    let host1 = generator.generate_host().await;
+    let host2 = generator.generate_host().await;
+    let host3 = generator.generate_host().await;
+    let user1 = generator.generate_user().await;
+    let user2 = generator.generate_user().await;
 
     service
         .lease(
@@ -152,10 +152,10 @@ async fn free_all_frees_hosts_only_for_one_user() {
 
 #[tokio::test]
 async fn leased_until_read() {
-    let (mut gen, registry) = create_registry().await;
+    let (mut generator, registry) = create_registry().await;
 
-    let host = gen.generate_host().await;
-    let user = gen.generate_user().await;
+    let host = generator.generate_host().await;
+    let user = generator.generate_user().await;
 
     let mut tx = registry.begin().await.unwrap();
 
