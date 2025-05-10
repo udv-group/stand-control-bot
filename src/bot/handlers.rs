@@ -2,12 +2,12 @@ use std::error::Error;
 
 use anyhow::Context;
 use teloxide::{
-    dispatching::{dialogue::InMemStorage, DpHandlerDescription, HandlerExt, UpdateFilterExt},
+    Bot,
+    dispatching::{DpHandlerDescription, HandlerExt, UpdateFilterExt, dialogue::InMemStorage},
     dptree, filter_command,
     prelude::{DependencyMap, Handler},
     requests::Requester,
     types::{Message, Update},
-    Bot,
 };
 
 use crate::logic::users::UsersService;
@@ -17,9 +17,8 @@ use super::{BotState, Command};
 pub type AnyResult<T> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 pub type HandlerResult = AnyResult<()>;
 
-pub fn build_handler(
-) -> Handler<'static, DependencyMap, Result<(), Box<dyn Error + Send + Sync>>, DpHandlerDescription>
-{
+pub fn build_handler()
+-> Handler<'static, DependencyMap, Result<(), Box<dyn Error + Send + Sync>>, DpHandlerDescription> {
     let commands_handler = filter_command::<Command, _>()
         .branch(dptree::case![Command::Start].endpoint(handle_start_command));
 
@@ -35,11 +34,12 @@ async fn main_state_handler(bot: Bot, msg: Message, users_service: UsersService)
     tracing::debug!(
         "Handling message. chat_id={} from={:?}",
         msg.chat.id,
-        msg.from().map(|f| f.id)
+        msg.from.as_ref().map(|f| f.id)
     );
 
     let user_id = msg
-        .from()
+        .from
+        .as_ref()
         .map(|m_from| m_from.id)
         .with_context(|| "Message without user_id")?;
     let link = msg
@@ -74,7 +74,7 @@ async fn handle_start_command(bot: Bot, msg: Message) -> HandlerResult {
         "Handling {:?} command. chat_id={} from={:?}",
         msg.text(),
         msg.chat.id,
-        msg.from().map(|f| f.id)
+        msg.from.as_ref().map(|f| f.id)
     );
     bot.send_message(msg.chat.id, "Hello, send your link code")
         .await?;

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::db::{models::User, Registry};
+use crate::db::{Registry, models::User};
 
 #[derive(Error, Debug)]
 pub enum UserError {

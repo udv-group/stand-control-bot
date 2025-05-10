@@ -8,8 +8,8 @@ use chrono::{DateTime, Utc};
 use tokio::time::sleep;
 
 use crate::db::{
-    models::{HostId, LeasedHost, UserId},
     Registry,
+    models::{HostId, LeasedHost, UserId},
 };
 use anyhow::Result;
 

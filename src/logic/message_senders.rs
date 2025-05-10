@@ -1,8 +1,8 @@
 use anyhow::Context;
 use anyhow::Result;
-use axum::async_trait;
+use async_trait::async_trait;
 use teloxide::types::ChatId;
-use teloxide::{prelude::Requester, Bot};
+use teloxide::{Bot, prelude::Requester};
 
 use super::notifications::{GetMessageSender, SendMessage};
 use crate::db::models::User;

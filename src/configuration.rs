@@ -3,12 +3,13 @@ use std::{
     path::PathBuf,
 };
 
-use secrecy::{ExposeSecret, Secret};
+use secrecy::ExposeSecret;
+use secrecy::SecretString;
 use serde::{Deserialize, Deserializer};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::{
-    postgres::{PgConnectOptions, PgSslMode},
     ConnectOptions,
+    postgres::{PgConnectOptions, PgSslMode},
 };
 
 #[derive(Deserialize, Clone)]
@@ -24,7 +25,7 @@ pub struct LdapSettings {
     pub use_tls: bool,
     pub no_tls_verify: bool,
     pub login: String,
-    pub password: Secret<String>,
+    pub password: SecretString,
     pub users_query: String,
 }
 
@@ -56,7 +57,7 @@ impl AppSettings {
 #[derive(Deserialize, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
-    pub password: Secret<String>,
+    pub password: SecretString,
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
@@ -121,7 +122,7 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     let config_dir: PathBuf = std::env::var("CONFIG_DIR")
         .unwrap_or_else(|_| match environment {
             Environment::Local => "configuration".into(),
-            Environment::Production => "/etc/stand-control-bot".into(),
+            Environment::Production => "/etc/tachikoma".into(),
         })
         .into();
     config::Config::builder()

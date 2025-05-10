@@ -1,10 +1,10 @@
 use anyhow::Context;
 use ldap3::LdapConnAsync;
 use secrecy::ExposeSecret;
-use stand_control_bot::{
+use tachikoma::{
     bot::build_tg_bot,
     configuration::get_config,
-    db::{run_migrations, Registry},
+    db::{Registry, run_migrations},
     logic::{
         message_senders::TgMessages, notifications::Notifier, release::hosts_release_timer,
         users::UsersService,
@@ -14,11 +14,11 @@ use stand_control_bot::{
 };
 
 use ldap3::drive;
-use teloxide::{requests::Requester, Bot};
+use teloxide::{Bot, requests::Requester};
 use tokio::select;
 use tracing::info;
 
-use stand_control_bot::telemetry::init_tracing;
+use tachikoma::telemetry::init_tracing;
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
@@ -26,7 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
     init_tracing();
     set_env();
 
-    tracing::info!("Starting stand-control");
+    tracing::info!("Starting tachikama");
     run_migrations(&settings.database).await?;
 
     let bot = Bot::from_env();
@@ -79,6 +79,6 @@ async fn main() -> Result<(), anyhow::Error> {
             info!("Bot exited")
         }
     };
-    info!("stand-control shut down");
+    info!("tachikama shut down");
     Ok(())
 }

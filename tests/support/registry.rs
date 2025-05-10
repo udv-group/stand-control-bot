@@ -1,6 +1,6 @@
-use stand_control_bot::{db::Registry, logic::hosts::HostsService};
+use tachikoma::{db::Registry, logic::hosts::HostsService};
 
-use super::{configure_db, gen::Generator, setup_settings};
+use super::{configure_db, generator::Generator, setup_settings};
 
 pub async fn create_service() -> (Generator, HostsService) {
     let configuration = setup_settings();

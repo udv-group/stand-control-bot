@@ -4,8 +4,8 @@ use chrono::{DateTime, TimeDelta, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    db::models::{Group, GroupId, Host, HostId, LeasedHost, User as UserDb},
     AppInfo,
+    db::models::{Group, GroupId, Host, HostId, LeasedHost, User as UserDb},
 };
 
 use super::auth::middleware::User;

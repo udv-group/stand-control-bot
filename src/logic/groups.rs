@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::db::{models::Group, Registry};
+use crate::db::{Registry, models::Group};
 
 #[derive(Error, Debug)]
 pub enum GroupError {
