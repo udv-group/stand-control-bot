@@ -97,6 +97,16 @@ impl Application {
                     )
                         .into_response()
                 }),
+            )
+            .route(
+                "/assets/tachikoma.png",
+                get(|| async {
+                    (
+                        [(axum::http::header::CONTENT_TYPE, "image/png")],
+                        include_bytes!("../../assets/tachikoma.png"),
+                    )
+                        .into_response()
+                }),
             );
 
         let authed_router = Router::new()
