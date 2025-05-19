@@ -2,9 +2,9 @@
 
 {% block content %}
 <div class="relative bg-transparent flex min-h-screen flex-col justify-center overflow-hidden py-6 sm:py-12">
-    <div class="flex justify-center text-gray-900 dark:text-gray-200">
-        <form action="/login" method="post">
-            <div class="grid gap-4 grid-cols-1 justify-items-start p-4">
+    <div class="flex justify-center text-gray-900 dark:text-gray-200 mx-auto" style="width: 300px;">
+        <form class="w-full" action="/login" method="post">
+            <div class="grid gap-4 grid-cols-1 p-4 w-full">
                 {% if let Some(error) = error %}
                 <div>
                     <p style="color:red;"><i>{{error}}</i></p>
