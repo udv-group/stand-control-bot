@@ -22,6 +22,7 @@ hyper = "1.6.0"
 ipnetwork = { version = "0.21", features = ["serde"] }
 itertools = "0.14.0"
 ldap3 = "^0.11"
+md-5 = "0.10.6"
 secrecy = { version = "0.10", features = ["serde"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde-aux = { version = "4" }

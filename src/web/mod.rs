@@ -2,20 +2,21 @@ mod auth;
 mod hosts;
 mod templates;
 
+use axum::http::StatusCode;
 use axum::{
     Router,
     body::Body,
-    extract::{FromRef, MatchedPath},
+    extract::{FromRef, MatchedPath, Request},
     middleware,
     response::{ErrorResponse, IntoResponse, Redirect},
-    routing::{get, post},
+    routing::{MethodRouter, get, post},
 };
 
 use axum_extra::extract::cookie::Key;
 use axum_flash::Flash;
 use axum_login::AuthManagerLayerBuilder;
-use hyper::Request;
-use std::net::SocketAddr;
+use md5::{Digest, Md5};
+use std::{convert::Infallible, net::SocketAddr};
 use tokio::net::TcpListener;
 
 use self::auth::{
@@ -80,23 +81,14 @@ impl Application {
         let assets_router = Router::new()
             .route(
                 "/assets/htmx.min.js",
-                get(|| async {
-                    (
-                        [(axum::http::header::CONTENT_TYPE, "text/javascript")],
-                        include_bytes!("../../assets/htmx.min.js"),
-                    )
-                        .into_response()
-                }),
+                cached_asset(
+                    include_bytes!("../../assets/htmx.min.js"),
+                    "text/javascript",
+                ),
             )
             .route(
                 "/assets/tailwindcss.css",
-                get(|| async {
-                    (
-                        [(axum::http::header::CONTENT_TYPE, "text/css")],
-                        include_bytes!("../../assets/tailwindcss.css"),
-                    )
-                        .into_response()
-                }),
+                cached_asset(include_bytes!("../../assets/tailwindcss.css"), "text/css"),
             )
             .route(
                 "/assets/tachikoma.png",
@@ -167,4 +159,36 @@ pub fn flash_redirect(msg: &str, path: &str, flash: Flash) -> ErrorResponse {
     (flash.error(msg), Redirect::to(path))
         .into_response()
         .into()
+}
+
+pub fn cached_asset<S>(
+    content: &'static [u8],
+    content_type: &'static str,
+) -> MethodRouter<S, Infallible>
+where
+    S: Clone + Send + Sync + 'static,
+{
+    let mut hasher = Md5::new();
+    hasher.update(content);
+
+    let content_hash = format!("{:x}", hasher.finalize());
+    get(move |request: axum::extract::Request| async move {
+        if let Some(header_value) = request.headers().get(axum::http::header::IF_NONE_MATCH) {
+            if header_value.to_str().unwrap_or("").eq(&content_hash) {
+                return StatusCode::NOT_MODIFIED.into_response();
+            }
+        }
+        (
+            [
+                (axum::http::header::CONTENT_TYPE, content_type),
+                (axum::http::header::ETAG, &content_hash),
+                (
+                    axum::http::header::CACHE_CONTROL,
+                    "no-cache, must-revalidate",
+                ),
+            ],
+            content,
+        )
+            .into_response()
+    })
 }
